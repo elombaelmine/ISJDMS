@@ -1,0 +1,109 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+}
+
+body {
+    /* Your main Deep Navy color with a gradient for depth */
+    background: radial-gradient(circle at center, #12253d 0%, #061428 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.signup-container {
+    background: #ffffff; /* Pure white card for high contrast */
+    width: 100%;
+    max-width: 650px; /* Wider box for a more 'pleasing' size */
+    padding: 45px;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    border-top: 6px solid #d4af37; /* Metallic Gold top accent */
+}
+
+.form-header {
+    text-align: center;
+    margin-bottom: 35px;
+}
+
+.form-header h2 {
+    color: #061428; /* Navy text on white is very clear */
+    font-size: 2rem;
+    font-weight: 800;
+}
+
+.form-header p {
+    color: #64748b;
+    margin-top: 5px;
+}
+
+/* Inputs - making them large and modern */
+input, select {
+    width: 100%;
+    padding: 15px;
+    margin-top: 8px;
+    margin-bottom: 20px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 1rem;
+    background: #f8fafc;
+    transition: 0.3s;
+}
+
+input:focus {
+    outline: none;
+    border-color: #d4af37;
+    background: #fff;
+}
+
+label {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #061428;
+    text-transform: uppercase;
+}
+
+/* The Button - using your Navy and Gold for a premium feel */
+.signup-btn {
+    width: 100%;
+    padding: 18px;
+    background: #061428;
+    color: #d4af37;
+    border: 2px solid #d4af37;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.signup-btn:hover {
+    background: #d4af37;
+    color: #061428;
+}
+
+.form-footer {
+    text-align: center;
+    margin-top: 25px;
+}
+
+.form-footer a {
+    color: #061428;
+    font-weight: 700;
+    text-decoration: none;
+}
+.brand {
+    position: absolute;
+    top: 40px;
+    left: 40px;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #D4AF37; 
+    text-transform: uppercase;
+    letter-spacing: 3px;
+}

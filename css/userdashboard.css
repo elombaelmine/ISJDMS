@@ -1,0 +1,156 @@
+:root {
+    --isj-blue: #001f3f; 
+    --isj-gold: #d4af37; 
+    --white: #ffffff;
+    --bg-light: #f8f9fa;
+    --sidebar-width: 260px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+body {
+    background-color: var(--bg-light);
+}
+
+.dashboard-wrapper {
+    display: flex;
+}
+
+/* SIDEBAR FIX: Using Flexbox to separate top and bottom */
+.sidebar {
+    width: var(--sidebar-width);
+    background-color: var(--isj-blue);
+    height: 100vh;
+    position: fixed; 
+    left: 0;
+    top: 0;
+    padding: 30px 20px;
+    color: var(--white);
+    display: flex;
+    flex-direction: column; /* Vertical stack */
+    z-index: 1000;
+}
+
+.sidebar-logo img {
+    width: 140px;
+    margin-bottom: 40px;
+    filter: brightness(0) invert(1);
+}
+
+.sidebar-nav {
+    flex: 1; /* This takes up all available middle space */
+}
+
+.sidebar-bottom {
+    margin-top: auto; /* Pushes this container to the bottom */
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.main-content {
+    margin-left: var(--sidebar-width); 
+    padding: 40px;
+    width: calc(100% - var(--sidebar-width));
+    min-height: 100vh;
+}
+
+.btn-upload {
+    background-color: var(--isj-gold);
+    color: var(--isj-blue);
+    border: none;
+    width: 100%;
+    padding: 14px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 30px;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    padding: 12px 15px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: 0.3s;
+}
+
+.nav-item i {
+    color: var(--isj-gold);
+    margin-right: 15px;
+    width: 20px;
+}
+
+.nav-item.active, .nav-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--white);
+}
+
+.logout-link {
+    color: #ff4d4d; /* Slight red for Sign Out */
+}
+
+.badge-new {
+    background: var(--isj-gold);
+    color: var(--isj-blue);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: auto;
+    font-weight: bold;
+}
+
+/* HEADER TOP RIGHT */
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-name {
+    color: var(--isj-blue);
+    font-weight: 600;
+}
+
+.user-avatar {
+    width: 45px;
+    height: 45px;
+    background: var(--isj-gold);
+    color: var(--isj-blue);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    text-transform: lowercase; /* Matches your 'w' style */
+}
+
+/* Rest of your grid styles... */
+.search-container {
+    background: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    width: 60%;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.search-container input { border: none; outline: none; width: 100%; margin-left: 10px; }
+.folder-grid, .file-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 25px; margin-bottom: 40px; }
+.folder-card, .file-card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: 0.3s; }
+.folder-card i { color: var(--isj-gold); }
+.section-title h2 { color: var(--isj-blue); margin-bottom: 20px; }

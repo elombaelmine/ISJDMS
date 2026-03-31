@@ -1,0 +1,300 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+body {
+    background-color: #061428; 
+    min-height: 100vh;
+    display: flex;
+    overflow: hidden; /* Keeps the professional 50/50 split locked */
+}
+
+.container {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+    background: radial-gradient(circle at center, #12253d 0%, #061428 100%);
+}
+
+/* Left Section - Professional Branding */
+.left-panel {
+    flex: 1.2; /* Slightly wider left side for the logo */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    position: relative;
+    border-right: 1px solid rgba(212, 175, 55, 0.1);
+}
+
+.brand {
+    position: absolute;
+    top: 40px;
+    left: 40px;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #D4AF37; 
+    text-transform: uppercase;
+    letter-spacing: 3px;
+}
+
+.illustration {
+    width: 340px;
+    height: 340px;
+    border: 8px solid #D4AF37;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #FFFFFF;
+    box-shadow: 0 0 50px rgba(212, 175, 55, 0.2);
+    margin-bottom: 30px;
+    transition: transform 0.3s ease;
+}
+
+.illustration:hover {
+    transform: scale(1.02);
+}
+
+.main-logo {
+    max-width: 80%;
+    height: auto;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+}
+
+.description {
+    max-width: 420px;
+    font-size: 1.15rem;
+    line-height: 1.6;
+    color: #FFFFFF;
+    text-align: center;
+    font-weight: 500;
+}
+
+/* Right Section - Student Oriented Login */
+.right-panel {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.login-card {
+    background-color: #FFFFFF;
+    padding: 60px 50px; /* Increased top/bottom padding */
+    border-radius: 28px;
+    width: 95%; /* Responsive base width */
+    max-width: 550px; /* Enlarged from 480px for a more professional presence */
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    transition: all 0.4s ease;
+}
+
+/* Make inputs slightly larger to match the bigger card */
+input {
+    padding: 18px; /* Slightly taller inputs */
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    font-size: 1.05rem;
+    background-color: #f8fafc;
+    margin-bottom: 5px;
+}
+
+/* Adjust the title for the larger scale */
+h2 {
+    color: #061428;
+    margin-bottom: 15px;
+    font-size: 2.5rem; /* Bigger, bolder heading */
+    font-weight: 800;
+}
+.student-subtitle {
+    color: #64748b;
+    font-size: 0.95rem;
+    margin-bottom: 35px;
+    font-weight: 500;
+}
+
+/* Form Elements */
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.input-label {
+    text-align: left;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #061428;
+    text-transform: uppercase;
+    margin-bottom: -15px;
+}
+
+input {
+    padding: 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 1rem;
+    background-color: #f8fafc;
+    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+input:focus {
+    border-color: #D4AF37;
+    background-color: #fff;
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
+}
+
+.login-btn {
+    padding: 18px;
+    border: none;
+    border-radius: 12px;
+    background-color: #D4AF37;
+    color: #061428;
+    font-size: 1.1rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: 0.3s;
+    margin-top: 10px;
+}
+
+.login-btn:hover {
+    background-color: #B8860B;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(184, 134, 11, 0.3);
+}
+
+.forgot-pass {
+    align-self: flex-end;
+    color: #64748b;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.forgot-pass:hover { color: #D4AF37; }
+
+.separator {
+    margin: 35px 0;
+    display: flex;
+    align-items: center;
+    color: #94a3b8;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.separator::before, .separator::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.separator:before { margin-right: 15px; }
+.separator:after { margin-left: 15px; }
+
+/* Social Icons */
+.social-icons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.social-icons i {
+    font-size: 1.2rem;
+    color: #64748b;
+    border: 2px solid #e2e8f0;
+    padding: 12px;
+    border-radius: 10px;
+    width: 55px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.social-icons i:hover {
+    border-color: #D4AF37;
+    color: #D4AF37;
+    background: rgba(212, 175, 55, 0.05);
+}
+
+.signup-link {
+    font-size: 0.95rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.signup-link a {
+    color: #D4AF37;
+    text-decoration: none;
+    font-weight: 800;
+    margin-left: 5px;
+}
+
+/* Footer Style */
+.footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background-color: #FFFFFF;
+    padding: 12px;
+    text-align: center;
+    font-size: 0.8rem;
+    color: #94a3b8;
+    border-top: 1px solid #e2e8f0;
+    font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .illustration { width: 260px; height: 260px; }
+    .left-panel { padding: 20px; }
+}
+
+@media (max-width: 768px) {
+    .left-panel { display: none; }
+}
+.welcome-footer {
+    padding: 15px 0; /* Slimmer footer */
+    font-size: 0.75rem;
+    color: #64748b; /* Professional slate gray */
+}
+
+/* Styling the "Back" Link Section */
+.brand {
+    position: absolute;
+    top: 40px; /* Moves it down from the very top */
+    left: 40px; /* Aligns it with the logo section */
+    z-index: 10;
+}
+
+.back-link {
+    text-decoration: none;
+    color: #D4AF37; /* Uses your Gold theme */
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space between the arrow icon and text */
+    transition: all 0.3s ease;
+}
+
+.back-link i {
+    font-size: 0.8rem;
+}
+
+/* Hover Effect for a professional feel */
+.back-link:hover {
+    color: #FFFFFF; /* Turns white on hover */
+    transform: translateX(-5px); /* Gentle slide to the left */
+}

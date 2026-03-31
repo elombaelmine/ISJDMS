@@ -1,0 +1,205 @@
+<?php
+session_start();
+include("database.php");
+
+// 1. Load PHPMailer classes
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+require 'PHPMailer/Exception.php';
+require 'PHPMailer/PHPMailer.php';
+require 'PHPMailer/SMTP.php';
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $fullname     = mysqli_real_escape_string($conn, $_POST['fullname']);
+    $email        = mysqli_real_escape_string($conn, $_POST['email']);
+    $phone_number = mysqli_real_escape_string($conn, $_POST['phone_number']);
+    $role         = mysqli_real_escape_string($conn, $_POST['role']);
+    $username     = mysqli_real_escape_string($conn, $_POST['username']);
+    $password     = $_POST['password'];
+
+    $otp = rand(100000, 999999);
+
+    $checkUser = $conn->prepare("SELECT id FROM registration WHERE email = ? OR username = ?");
+    $checkUser->bind_param("ss", $email, $username);
+    $checkUser->execute();
+    
+    if ($checkUser->get_result()->num_rows > 0) {
+        header("Location: signup.php?error=taken");
+        exit();
+    }
+
+    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+    $sql = $conn->prepare("INSERT INTO registration (fullname, email, phone_number, role, username, password, status, otp_code) VALUES (?, ?, ?, ?, ?, ?, 'Pending', ?)");
+    $sql->bind_param("sssssss", $fullname, $email, $phone_number, $role, $username, $hashed_password, $otp);
+
+    if ($sql->execute()) {
+        $_SESSION['pending_email'] = $email;
+
+        // --- START PHPMAILER LOGIC ---
+        $mail = new PHPMailer(true);
+
+        try {
+            $mail->isSMTP();
+            $mail->Host       = 'smtp.gmail.com';
+            $mail->SMTPAuth   = true;
+            $mail->Username   = 'elmine0520@gmail.com'; 
+            $mail->Password   = 'vmqd vkuc aqer rrns'; 
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = 587;
+
+            $mail->setFrom('elmine0520@gmail.com', 'ISJ Docs System');
+            $mail->addAddress($email, $fullname);
+
+            $mail->isHTML(true);
+            $mail->Subject = 'Verify Your Identity - ISJ Docs';
+            $mail->Body    = "
+                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px;'>
+                    <h2 style='color: #061428; text-align: center;'>Welcome to ISJ Docs</h2>
+                    <p>Hello <strong>$fullname</strong>,</p>
+                    <p>Your verification code is: <strong style='color: #D4AF37;'>$otp</strong></p>
+                </div>";
+
+            // FIX 1: Wrap the send and redirect together
+            if($mail->send()){
+                // FIX 2: Ensure NO text/HTML was echoed before this line
+                header("Location: verify_otp.php");
+                exit(); // FIX 3: Always exit after a redirect
+            }
+
+        } catch (Exception $e) {
+            header("Location: signup.php?error=mail_fail");
+            exit();
+        }
+    } else {
+        header("Location: signup.php?error=db_fail");
+        exit();
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISJ Docs — Create Account</title>
+    <link rel="stylesheet" href="../css/signup.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .password-container { position: relative; width: 100%; }
+        .password-container input { width: 100%; padding-right: 40px; }
+        .toggle-password {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #666;
+        }
+
+        /* Position the back link at the very top left of the page */
+.back-link-container {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+}
+
+.back-link {
+    color: #ffffff; /* White text for the dark background */
+    text-decoration: none;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    transition: color 0.3s ease;
+}
+
+.back-link i {
+    margin-right: 8px; /* Space for the icon */
+}
+
+.back-link:hover {
+    color: #D4AF37; /* Turns gold on hover */
+}
+
+/* Ensure the container is relative so the absolute link stays relative to the screen */
+body {
+    position: relative;
+    min-height: 100vh;
+}
+    </style>
+</head>
+<body>
+    <div class="back-link-container"> 
+        <a href="../php/welcome.php" class="back-link">
+            <i class="fas fa-arrow-left"></i> Back to Welcome Page
+        </a>
+    </div>
+    <div class="signup-container">
+        <div class="form-header">
+            <h2>Join ISJ Docs</h2>
+            <p>Create your account and verify your email.</p>
+        </div>
+
+        <form action="signup.php" method="POST">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" name="fullname" placeholder="Your name" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" placeholder="name@example.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="tel" name="phone_number" placeholder="+237 600 000 000">
+                </div>
+
+                <div class="form-group">
+                    <label>User Role</label>
+                    <select name="role" required>
+                        <option value="" disabled selected>Select Role</option>
+                        <option value="student">Student</option>
+                        <option value="teacher">Teacher</option>
+                        <option value="parent">Parent</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" name="username" placeholder="Choose a username" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="password-container">
+                        <input type="password" name="password" id="password" placeholder="••••••••" required>
+                        <i class="fas fa-eye toggle-password" id="togglePassword"></i>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="signup-btn">Create Account</button>
+        </form>
+
+        <div class="form-footer">
+            Already have an account? <a href="login.php">Sign In</a>
+        </div>
+    </div>
+
+    <script>
+        const togglePassword = document.querySelector('#togglePassword');
+        const passwordField = document.querySelector('#password');
+
+        togglePassword.addEventListener('click', function () {
+            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordField.setAttribute('type', type);
+            this.classList.toggle('fa-eye-slash');
+        });
+    </script>
+</body>
+</html>
