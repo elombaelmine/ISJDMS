@@ -10,6 +10,19 @@ require 'PHPMailer/Exception.php';
 require 'PHPMailer/PHPMailer.php';
 require 'PHPMailer/SMTP.php';
 
+$error_display = "";
+
+// Check for URL error parameters to display messages
+if (isset($_GET['error'])) {
+    if ($_GET['error'] == 'taken') {
+        $error_display = "Email or Username is already in use.";
+    } elseif ($_GET['error'] == 'mail_fail') {
+        $error_display = "Account created but failed to send verification email.";
+    } elseif ($_GET['error'] == 'db_fail') {
+        $error_display = "Registration failed. Please try again later.";
+    }
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $fullname     = mysqli_real_escape_string($conn, $_POST['fullname']);
     $email        = mysqli_real_escape_string($conn, $_POST['email']);
@@ -20,6 +33,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     $otp = rand(100000, 999999);
 
+    // UNIQUE CHECK: Check if email OR username already exists
     $checkUser = $conn->prepare("SELECT id FROM registration WHERE email = ? OR username = ?");
     $checkUser->bind_param("ss", $email, $username);
     $checkUser->execute();
@@ -37,7 +51,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($sql->execute()) {
         $_SESSION['pending_email'] = $email;
 
-        // --- START PHPMAILER LOGIC ---
         $mail = new PHPMailer(true);
 
         try {
@@ -61,11 +74,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <p>Your verification code is: <strong style='color: #D4AF37;'>$otp</strong></p>
                 </div>";
 
-            // FIX 1: Wrap the send and redirect together
             if($mail->send()){
-                // FIX 2: Ensure NO text/HTML was echoed before this line
                 header("Location: verify_otp.php");
-                exit(); // FIX 3: Always exit after a redirect
+                exit();
             }
 
         } catch (Exception $e) {
@@ -99,35 +110,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             color: #666;
         }
 
-        /* Position the back link at the very top left of the page */
-.back-link-container {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-}
-
-.back-link {
-    color: #ffffff; /* White text for the dark background */
-    text-decoration: none;
-    font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    transition: color 0.3s ease;
-}
-
-.back-link i {
-    margin-right: 8px; /* Space for the icon */
-}
-
-.back-link:hover {
-    color: #D4AF37; /* Turns gold on hover */
-}
-
-/* Ensure the container is relative so the absolute link stays relative to the screen */
-body {
-    position: relative;
-    min-height: 100vh;
-}
+        .back-link-container { position: absolute; top: 20px; left: 20px; }
+        .back-link { color: #ffffff; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; transition: color 0.3s ease; }
+        .back-link i { margin-right: 8px; }
+        .back-link:hover { color: #D4AF37; }
+        body { position: relative; min-height: 100vh; }
+        
+        .error-banner {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 0.9rem;
+            border: 1px solid #f5c6cb;
+        }
     </style>
 </head>
 <body>
@@ -141,6 +139,10 @@ body {
             <h2>Join ISJ Docs</h2>
             <p>Create your account and verify your email.</p>
         </div>
+
+        <?php if ($error_display): ?>
+            <div class="error-banner"><?php echo $error_display; ?></div>
+        <?php endif; ?>
 
         <form action="signup.php" method="POST">
             <div class="form-grid">

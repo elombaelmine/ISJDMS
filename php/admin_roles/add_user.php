@@ -10,25 +10,26 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 $message = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $fullname = $_POST['fullname'];
-    $email = $_POST['email'];
-    $phone = $_POST['phone_number'];
-    $username = $_POST['username'];
-    $role = $_POST['role'];
+    // Sanitize inputs to prevent SQL Injection
+    $fullname = mysqli_real_escape_string($conn, $_POST['fullname']);
+    $email = mysqli_real_escape_string($conn, $_POST['email']);
+    $phone = mysqli_real_escape_string($conn, $_POST['phone_number']);
+    $username = mysqli_real_escape_string($conn, $_POST['username']);
+    $role = mysqli_real_escape_string($conn, $_POST['role']);
     $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
     
-    // THE FIX: Generate the OTP here so the 'Login Gate' works!
     $admin_otp = rand(100000, 999999); 
     $status = 'Enabled'; 
 
+    // UNIQUE CHECK: Verify if Email OR Username already exists in the system
     $check = $conn->prepare("SELECT id FROM registration WHERE email = ? OR username = ?");
     $check->bind_param("ss", $email, $username);
     $check->execute();
     
     if ($check->get_result()->num_rows > 0) {
-        $message = "<p style='color: #e74c3c; text-align:center;'>Error: Email or Username already exists.</p>";
+        $message = "<p style='color: #e74c3c; text-align:center; font-weight:bold;'>Error: This Email or Username is already taken.</p>";
     } else {
-        // Updated INSERT to include otp_code
+        // Proceed with insertion if both are unique
         $stmt = $conn->prepare("INSERT INTO registration (fullname, email, phone_number, username, role, password, status, otp_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->bind_param("ssssssss", $fullname, $email, $phone, $username, $role, $password, $status, $admin_otp);
 
@@ -55,7 +56,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         .form-group label { display: block; margin-bottom: 4px; color: #001f3f; font-weight: bold; font-size: 12px; text-transform: uppercase; }
         .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; outline: none; background: #f9f9f9; box-sizing: border-box; }
         
-        /* Eye Toggle Styling */
         .password-wrapper { position: relative; }
         .toggle-password { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #777; }
         

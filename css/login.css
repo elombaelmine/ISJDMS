@@ -21,7 +21,7 @@ body {
 
 /* Left Section - Professional Branding */
 .left-panel {
-    flex: 0.8; /* Slightly wider left side for the logo */
+    flex: 0.8; 
     display: flex;
     flex-direction: column;
     justify-content: center;
