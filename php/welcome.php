@@ -19,7 +19,6 @@
             </div>
             <div class="nav-links">
                 <a href="../php/login.php" class="link-btn">Login</a>
-                <!-- <a href="../php/signup.php" class="cta-btn-sm">Get Started</a> -->
             </div>
         </nav>
 

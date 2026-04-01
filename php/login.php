@@ -74,7 +74,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['fullname'] = $user['fullname'];
                 $_SESSION['email'] = $user['email'];
-                $_SESSION['phone_number'] = $user['phone_number']; // <--- New Session Variable
+                $_SESSION['phone_number'] = $user['phone_number']; 
                 $_SESSION['role'] = $user['role'];
 
                 if ($user['role'] === 'admin') {

@@ -9,7 +9,7 @@ body {
     background-color: #061428; 
     min-height: 100vh;
     display: flex;
-    overflow: hidden; /* Keeps the professional 50/50 split locked */
+    overflow: hidden; 
 }
 
 .container {
@@ -21,11 +21,11 @@ body {
 
 /* Left Section - Professional Branding */
 .left-panel {
-    flex: 1.2; /* Slightly wider left side for the logo */
+    flex: 0.8; /* Slightly wider left side for the logo */
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: center;
+    align-items: center;    
     padding: 40px;
     position: relative;
     border-right: 1px solid rgba(212, 175, 55, 0.1);
@@ -77,11 +77,11 @@ body {
 
 /* Right Section - Student Oriented Login */
 .right-panel {
-    flex: 1;
+    flex: 1;    
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: rgba(255, 255, 255, 0.03);
+    /* background-color:  1px solid rgba(212, 175, 55, 0.1); */
 }
 
 .login-card {
