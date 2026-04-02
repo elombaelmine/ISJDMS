@@ -94,9 +94,7 @@ body {
     opacity: 0.8;
 }
 
-/* =========================================
-   3. MAIN CONTENT LAYOUT
-   ========================================= */
+/* 3. MAIN CONTENT LAYOUT */
 .main-layout {
     margin-left: var(--sidebar-width);
     flex: 1;
@@ -146,9 +144,7 @@ body {
     font-weight: bold; 
 }
 
-/* =========================================
-   4. TABLES & COMPONENTS
-   ========================================= */
+/*  4. TABLES & COMPONENTS */
 .content-body { padding: 40px; }
 
 .page-header-flex {
