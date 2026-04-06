@@ -12,6 +12,10 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 // Total Users
 $userCount = $conn->query("SELECT COUNT(*) as total FROM registration WHERE role != 'admin'")->fetch_assoc()['total'];
 
+// NEW: Counts for the User Management Tab
+$enabledCount = $conn->query("SELECT COUNT(*) as total FROM registration WHERE role != 'admin' AND status = 'enabled'")->fetch_assoc()['total'];
+$disabledCount = $conn->query("SELECT COUNT(*) as total FROM registration WHERE role != 'admin' AND status = 'disabled'")->fetch_assoc()['total'];
+
 // Total Documents - Safe check using try-catch
 try {
     $docResult = $conn->query("SELECT COUNT(*) as total FROM documents");
@@ -96,11 +100,26 @@ $result = $conn->query($query);
     <?php endif; ?>
 
     <?php if(isset($_GET['tab']) && $_GET['tab'] == 'users'): ?>
-    <section id="tab-users" class="admin-tab">
-        <div class="page-header-flex">
-            <h2 class="page-title">User Management</h2>
-            <button class="btn-create" onclick="location.href='admin_roles/add_user.php'">+ Create New User</button>
+<section id="tab-users" class="admin-tab">
+    <div class="page-header-flex" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <h2 class="page-title" style="margin: 0;">User Management</h2>
+            
+            <div class="user-stats-badges" style="display: flex; gap: 10px;">
+                <span style="background: #f1f3f5; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; color: #495057;">
+                    Total: <?php echo $userCount; ?>
+                </span>
+                <span style="background: #e6fffa; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; color: #088f8f; border: 1px solid #b2f5ea;">
+                    Enabled: <?php echo $enabledCount; ?>
+                </span>
+                <span style="background: #fff5f5; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; color: #e53e3e; border: 1px solid #feb2b2;">
+                    Disabled: <?php echo $disabledCount; ?>
+                </span>
+            </div>
         </div>
+        
+        <button class="btn-create" onclick="location.href='admin_roles/add_user.php'">+ Create New User</button>
+    </div>
 
         <div class="data-table-container">
             <table class="isj-table">
@@ -135,10 +154,10 @@ $result = $conn->query($query);
                                 <?php endif; ?>
                             </a>
 
-                            <a href="admin_roles/delete_user.php?id=<?php echo $user['id']; ?>" class="btn-icon" 
+                            <!-- <a href="admin_roles/delete_user.php?id=<?php echo $user['id']; ?>" class="btn-icon" 
                                onclick="return confirm('Are you sure?')" style="color: #e74c3c;">
                                 <i class="fas fa-trash-alt"></i>
-                            </a>
+                            </a> -->
                         </td>
                     </tr>
                     <?php endwhile; ?>

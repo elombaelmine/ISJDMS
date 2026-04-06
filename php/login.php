@@ -8,31 +8,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = mysqli_real_escape_string($conn, $_POST['username']);
     $password = $_POST['password'];
 
-    // 1. Added phone_number to the SELECT statement
     $sql = "SELECT id, fullname, email, phone_number, username, password, role, status, otp_code FROM registration WHERE username = '$username'";
     $result = $conn->query($sql);
 
     if ($result->num_rows > 0) {
         $user = $result->fetch_assoc();
 
-        // 2. Password Verification
         if (password_verify($password, $user['password'])) {
             
-            // 3. Check if Account is Disabled
-            if ($user['status'] === 'disabled') {
+            // 1. Check if account is Disabled
+            if ($user['status'] === 'Disabled') { 
                 $error_msg = "Your account is currently disabled. Please contact the Admin.";
             } 
-            // 4. THE ADMIN GATE: Check for unverified OTP
+            // 2. Check if the user needs to verify an Admin-created account via Email OTP
             elseif (!empty($user['otp_code'])) {
                 $_SESSION['pending_email'] = $user['email'];
-                $otp = $user['otp_code']; // Get the code the Admin created
+                $otp = $user['otp_code']; 
                 $fullname = $user['fullname'];
 
-                // --- START PHPMAILER LOGIC ---
-                // Remove the ../ because the folder is right there!
-                  require 'PHPMailer/Exception.php';
-                  require 'PHPMailer/PHPMailer.php';
-                  require 'PHPMailer/SMTP.php';
+                require 'PHPMailer/Exception.php';
+                require 'PHPMailer/PHPMailer.php';
+                require 'PHPMailer/SMTP.php';
 
                 $mail = new PHPMailer\PHPMailer\PHPMailer(true);
 
@@ -69,19 +65,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
                 exit();
             }
+            // 3. NEW: If user is ADMIN, send to Google Authenticator 2FA Verification
+            elseif ($user['role'] === 'admin') {
+                $_SESSION['temp_admin_id'] = $user['id']; // Temporary storage
+                $_SESSION['fullname'] = $user['fullname']; // Useful for the greeting on the next page
+                header("Location: admin_verify_2fa.php");
+                exit();
+            }
+            // 4. Standard User Login (Student/Teacher/Parent)
             else {
-                // 5. Normal Login Flow - Added phone_number to Session
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['fullname'] = $user['fullname'];
                 $_SESSION['email'] = $user['email'];
                 $_SESSION['phone_number'] = $user['phone_number']; 
                 $_SESSION['role'] = $user['role'];
 
-                if ($user['role'] === 'admin') {
-                    header("Location: admindashboard.php");
-                } else {
-                    header("Location: userdashboard.php");
-                }
+                header("Location: userdashboard.php");
                 exit();
             }
         } else {
@@ -99,7 +98,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | ISJ Docs</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="../css/login.css?v=3.0">
+    <style>
+        .password-field-container {
+            position: relative;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        .password-field-container input {
+            width: 100%;
+            padding-right: 40px; 
+            box-sizing: border-box;
+        }
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #666;
+            z-index: 10;
+        }
+    </style>
 </head>
 <body>
     <div class="container">      
@@ -125,12 +146,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                 <form action="login.php" method="POST">
                     <input type="text" name="username" placeholder="Username" required>
-                    <input type="password" name="password" placeholder="Password" required>
+                    
+                    <div class="password-field-container">
+                        <input type="password" name="password" id="password" placeholder="Password" required>
+                        <i class="fas fa-eye toggle-password" id="togglePassword"></i>
+                    </div>
                     
                     <button type="submit" class="login-btn">Log in</button>
                 </form>
                 
-                <a href="#" class="forgot-pass">Forgotten password?</a>
+               <a href="password_control/forgot_password.php" class="forgot-pass">Forgotten password?</a>
                 <p class="signup-link">Need an account? <a href="../php/signup.php">Sign up</a></p>
             </div>
         </div>
@@ -141,5 +166,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <p class="textfoot">&copy; 2026 ISJ DOCUMENTATION SYSTEM — Developed for the ISJ Integration Project.</p>
         </footer>
     </div>
+
+    <script>
+        const togglePassword = document.querySelector('#togglePassword');
+        const passwordField = document.querySelector('#password');
+
+        togglePassword.addEventListener('click', function () {
+            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordField.setAttribute('type', type);
+            this.classList.toggle('fa-eye-slash');
+        });
+    </script>
 </body>
 </html>

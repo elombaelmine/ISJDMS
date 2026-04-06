@@ -20,6 +20,10 @@ if (isset($_GET['error'])) {
         $error_display = "Account created but failed to send verification email.";
     } elseif ($_GET['error'] == 'db_fail') {
         $error_display = "Registration failed. Please try again later.";
+    } elseif ($_GET['error'] == 'mismatch') {
+        $error_display = "Passwords do not match!";
+    } elseif ($_GET['error'] == 'invalid_code') {
+        $error_display = "Invalid Teacher Authorization Code!";
     }
 }
 
@@ -30,10 +34,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $role         = mysqli_real_escape_string($conn, $_POST['role']);
     $username     = mysqli_real_escape_string($conn, $_POST['username']);
     $password     = $_POST['password'];
+    $confirm_password = $_POST['confirm_password'];
+    
+    // --- TEACHER SECRET CODE CHECK ---
+    $teacher_auth_code = $_POST['teacher_auth_code'] ?? '';
+    $OFFICIAL_STAFF_CODE = "IUSJC2026"; 
+
+    if ($role === 'teacher' && $teacher_auth_code !== $OFFICIAL_STAFF_CODE) {
+        header("Location: signup.php?error=invalid_code");
+        exit();
+    }
+    // ---------------------------------
+
+    if ($password !== $confirm_password) {
+        header("Location: signup.php?error=mismatch");
+        exit();
+    }
 
     $otp = rand(100000, 999999);
 
-    // UNIQUE CHECK: Check if email OR username already exists
     $checkUser = $conn->prepare("SELECT id FROM registration WHERE email = ? OR username = ?");
     $checkUser->bind_param("ss", $email, $username);
     $checkUser->execute();
@@ -50,7 +69,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if ($sql->execute()) {
         $_SESSION['pending_email'] = $email;
-
         $mail = new PHPMailer(true);
 
         try {
@@ -72,6 +90,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <h2 style='color: #061428; text-align: center;'>Welcome to ISJ Docs</h2>
                     <p>Hello <strong>$fullname</strong>,</p>
                     <p>Your verification code is: <strong style='color: #D4AF37;'>$otp</strong></p>
+                    <p>Role Registered: <strong>" . ucfirst($role) . "</strong></p>
                 </div>";
 
             if($mail->send()){
@@ -101,30 +120,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <style>
         .password-container { position: relative; width: 100%; }
         .password-container input { width: 100%; padding-right: 40px; }
-        .toggle-password {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            color: #666;
-        }
-
+        .toggle-password { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #666; }
         .back-link-container { position: absolute; top: 20px; left: 20px; }
         .back-link { color: #ffffff; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; transition: color 0.3s ease; }
         .back-link i { margin-right: 8px; }
         .back-link:hover { color: #D4AF37; }
         body { position: relative; min-height: 100vh; }
+        .error-banner { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; font-size: 0.9rem; border: 1px solid #f5c6cb; }
         
-        .error-banner {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            text-align: center;
-            font-size: 0.9rem;
-            border: 1px solid #f5c6cb;
+        /* Teacher Code Styling */
+        #teacherCodeGroup { 
+            background: #eef2f7; 
+            padding: 10px; 
+            border-radius: 8px; 
+            border-left: 4px solid #061428; 
+            margin-bottom: 15px; 
         }
     </style>
 </head>
@@ -144,7 +154,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <div class="error-banner"><?php echo $error_display; ?></div>
         <?php endif; ?>
 
-        <form action="signup.php" method="POST">
+        <form action="signup.php" method="POST" id="signupForm">
             <div class="form-grid">
                 <div class="form-group">
                     <label>Full Name</label>
@@ -163,13 +173,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                 <div class="form-group">
                     <label>User Role</label>
-                    <select name="role" required>
+                    <select name="role" id="roleSelect" onchange="toggleTeacherCode()" required>
                         <option value="" disabled selected>Select Role</option>
                         <option value="student">Student</option>
                         <option value="teacher">Teacher</option>
                         <option value="parent">Parent</option>
                     </select>
                 </div>
+
+                <div class="form-group" id="teacherCodeGroup" style="display: none;">
+                <label style="color: #061428; font-weight: bold;">Teacher Authorization Code</label>
+                 <div class="password-container">
+                <input type="password" name="teacher_auth_code" id="teacher_auth_code" placeholder="Enter IUSJC Staff Code">
+               <i class="fas fa-eye toggle-password" id="toggleTeacherCode"></i>
+              </div>
+           <small style="color: #666;">This code is required for Teacher accounts.</small>
+          </div>
 
                 <div class="form-group">
                     <label>Username</label>
@@ -183,9 +202,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <i class="fas fa-eye toggle-password" id="togglePassword"></i>
                     </div>
                 </div>
+
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <div class="password-container">
+                        <input type="password" name="confirm_password" id="confirm_password" placeholder="••••••••" required>
+                        <i class="fas fa-eye toggle-password" id="toggleConfirmPassword"></i>
+                    </div>
+                    <small id="error-text" style="color: #e74c3c; visibility: hidden; font-weight: bold;">Passwords do not match!</small>
+                </div>
             </div>
 
-            <button type="submit" class="signup-btn">Create Account</button>
+            <button type="submit" class="signup-btn" id="submitBtn">Create Account</button>
         </form>
 
         <div class="form-footer">
@@ -194,14 +222,67 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </div>
 
     <script>
-        const togglePassword = document.querySelector('#togglePassword');
-        const passwordField = document.querySelector('#password');
+        // Logic to show/hide the Teacher Code field
+        
+        const roleSelect = document.querySelector('#roleSelect');
+        const teacherGroup = document.querySelector('#teacherCodeGroup');
+        const teacherInput = document.querySelector('#teacher_auth_code');
 
-        togglePassword.addEventListener('click', function () {
+        function toggleTeacherCode() {
+            if (roleSelect.value === 'teacher') {
+                teacherGroup.style.display = 'block';
+                teacherInput.required = true;
+            } else {
+                teacherGroup.style.display = 'none';
+                teacherInput.required = false;
+                teacherInput.value = ''; // Clear it if they switch back to Student
+            }
+        }
+
+        // Password visibility and real-time validation
+        const togglePassword = document.querySelector('#togglePassword');
+        const toggleConfirm = document.querySelector('#toggleConfirmPassword');
+        const passwordField = document.querySelector('#password');
+        const confirmField = document.querySelector('#confirm_password');
+        const errorText = document.querySelector('#error-text');
+        const submitBtn = document.querySelector('#submitBtn');
+
+        togglePassword.addEventListener('click', () => {
             const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
             passwordField.setAttribute('type', type);
-            this.classList.toggle('fa-eye-slash');
+            togglePassword.classList.toggle('fa-eye-slash');
         });
+
+        toggleConfirm.addEventListener('click', () => {
+            const type = confirmField.getAttribute('type') === 'password' ? 'text' : 'password';
+            confirmField.setAttribute('type', type);
+            toggleConfirm.classList.toggle('fa-eye-slash');
+        });
+         
+        // --- ADD THIS BLOCK HERE ---
+          const toggleTeacher = document.querySelector('#toggleTeacherCode');
+
+     toggleTeacher.addEventListener('click', function () {
+    const type = teacherInput.getAttribute('type') === 'password' ? 'text' : 'password';
+    teacherInput.setAttribute('type', type);
+    this.classList.toggle('fa-eye-slash');
+});
+// ----------------------------
+
+        function validate() {
+            if (confirmField.value.length > 0 && passwordField.value !== confirmField.value) {
+                errorText.style.visibility = 'visible';
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.6';
+            } else {
+                errorText.style.visibility = 'hidden';
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+            }
+        }
+
+        passwordField.addEventListener('input', validate);
+        confirmField.addEventListener('input', validate);
     </script>
 </body>
 </html>
