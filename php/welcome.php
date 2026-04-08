@@ -18,7 +18,7 @@
                 <img src="../images/image.png" class="nav-logo">
             </div>
             <div class="nav-links">
-                <a href="../php/login.php" class="link-btn">Login</a>
+                <a href="../php/login.php" class="main-btn">Login</a>
             </div>
         </nav>
 
