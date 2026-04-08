@@ -1,5 +1,6 @@
 <?php
 session_start();
+// Adjust path to your phpGangsta/GoogleAuthenticator.php file
 require_once 'phpGangsta/GoogleAuthenticator.php';
 include("database.php");
 
@@ -25,7 +26,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $secret = $row['google_auth_secret'];
 
     // 3. Verify the 6-digit code from their phone
-    // '2' allows a small time window in case the phone clock is slightly off
     $checkResult = $ga->verifyCode($secret, $user_code, 2); 
 
     if ($checkResult) {
@@ -39,7 +39,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         header("Location: admindashboard.php");
         exit();
     } else {
-        $error = "Invalid code. Please check your Google Authenticator app.";
+        $error = "Invalid code. Please check your app and try again.";
     }
 }
 ?>
@@ -48,21 +48,141 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verify Admin | ISJ Docs</title>
-    <link rel="stylesheet" href="../css/login.css"> <style>
-        .auth-container { text-align: center; margin-top: 100px; font-family: sans-serif; }
-        .auth-box { display: inline-block; padding: 40px; background: #fff; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-top: 5px solid #007bff; }
-        input[type="text"] { font-size: 2rem; width: 200px; text-align: center; letter-spacing: 8px; margin: 20px 0; border: 2px solid #ddd; border-radius: 5px; }
-        .btn-verify { background: #007bff; color: white; border: none; padding: 12px 30px; font-size: 1rem; cursor: pointer; border-radius: 5px; }
-        .btn-verify:hover { background: #0056b3; }
-        .error-msg { color: #d9534f; background: #f2dede; padding: 10px; margin-bottom: 15px; border-radius: 4px; }
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        /* Base Styling for Dark Blue Theme */
+        body, html {
+            height: 100%;
+            margin: 0;
+            background-color: #061428; /* Dark Blue Background */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* The main centered box */
+        .auth-wrapper {
+            width: 100%;
+            max-width: 450px;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background-color: #ffffff; /* Card remains White for contrast */
+            padding: 50px 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            border-top: 6px solid #D4AF37; /* Gold accent */
+        }
+
+        /* Icon & Title styling */
+        .card-icon {
+            font-size: 3rem;
+            color: #061428; /* Dark Blue Icon */
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            margin: 0 0 10px 0;
+            color: #061428; /* Dark Blue Title */
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        p {
+            margin: 0 0 30px 0;
+            color: #555;
+            font-size: 0.95rem;
+        }
+
+        /* Error Message Styling */
+        .error-msg {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+            padding: 12px;
+            margin-bottom: 25px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        /* 6-Digit Code Input Styling */
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            font-size: 2.5rem;
+            text-align: center;
+            letter-spacing: 12px; 
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            background-color: #f9f9f9;
+            color: #061428;
+            margin-bottom: 30px;
+            font-family: 'Courier New', Courier, monospace;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #061428; 
+            background-color: #fff;
+        }
+
+        /* Submit Button Styling - DARK BLUE BUTTON */
+        .btn-verify {
+            width: 100%;
+            background-color: #061428; /* Dark Blue Button */
+            color: #ffffff;
+            border: none;
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-verify:hover {
+            background-color: #0a2245; /* Slightly lighter blue hover */
+            transform: translateY(-2px);
+        }
+
+        /* Cancel Link Styling */
+        .cancel-link {
+            display: inline-block;
+            margin-top: 25px;
+            color: #888;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .cancel-link:hover {
+            color: #061428;
+            text-decoration: underline;
+        }
+
     </style>
 </head>
-<body style="background: #f4f7f6;">
-    <div class="auth-container">
-        <div class="auth-box">
-            <h2>🛡️ 2-Step Verification</h2>
-            <p>Please enter the 6-digit code from your phone app.</p>
+<body>
+    <div class="auth-wrapper">
+        <div class="auth-card">
+            <div class="card-icon">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            
+            <h2>2-Step Verification</h2>
+            <p>Please enter the 6-digit security code from your phone application.</p>
             
             <?php if($error): ?>
                 <div class="error-msg"><?php echo $error; ?></div>
@@ -70,10 +190,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             <form method="POST">
                 <input type="text" name="auth_code" placeholder="000000" maxlength="6" required autocomplete="off" autofocus>
-                <br>
+                
                 <button type="submit" class="btn-verify">Verify & Login</button>
             </form>
-            <p><a href="logout.php" style="color: #666; font-size: 0.9rem;">Cancel Login</a></p>
+            
+            <a href="logout.php" class="cancel-link">Cancel Login Request</a>
         </div>
     </div>
 </body>

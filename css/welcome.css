@@ -67,16 +67,35 @@ body {
     align-items: center;
 }
 
-.link-btn {
+/* .link-btn {
      background: var(--isj-gold);
     color: var(--isj-navy);
-    /* padding: 20px 30px; */
-    height: 20px;
-    width: 60px;
+    padding: 10px 20px;
     border-radius: 8px;
     text-decoration: none;
     font-weight: 700;
     transition: 0.3s;
+} */
+ .link-btn {
+    background: var(--isj-gold);
+    color: var(--isj-navy);
+    /* Increased first value for height (15px) and second for width (40px) */
+    padding: 15px 40px; 
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 700;
+    transition: 0.3s;
+    
+    /* These additions ensure a consistent size */
+    display: inline-block; /* Required for height/width to work on <a> tags */
+    min-width: 180px;      /* Ensures the button is never too small */
+    text-align: center;    /* Centers text if you use a fixed width */
+    font-size: 1.1rem;     /* Slightly larger text to match the larger button */
+}
+
+.link-btn:hover {
+    transform: scale(1.05); /* Subtle growth effect on hover */
+    filter: brightness(1.1); /* Slight glow */
 }
 
 .cta-btn-sm {
