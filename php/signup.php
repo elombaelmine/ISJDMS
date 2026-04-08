@@ -22,10 +22,11 @@ if (isset($_GET['error'])) {
         $error_display = "Registration failed. Please try again later.";
     } elseif ($_GET['error'] == 'mismatch') {
         $error_display = "Passwords do not match!";
-    } elseif ($_GET['error'] == 'invalid_code') {
-        $error_display = "Invalid Teacher Authorization Code!";
+    } elseif ($_GET['error'] == 'invalid_code') { // Removed the extra } here
+        $error_display = "Invalid Authorization Code!";
     }
 }
+
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $fullname     = mysqli_real_escape_string($conn, $_POST['fullname']);
@@ -37,13 +38,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $confirm_password = $_POST['confirm_password'];
     
     // --- TEACHER SECRET CODE CHECK ---
-    $teacher_auth_code = $_POST['teacher_auth_code'] ?? '';
-    $OFFICIAL_STAFF_CODE = "IUSJC2026"; 
+   // --- UPDATED SECRET CODE CHECKS ---
+$teacher_auth_code = $_POST['teacher_auth_code'] ?? '';
+$OFFICIAL_TEACHER_CODE = "IUSJC2026"; 
+$OFFICIAL_STAFF_CODE   = "STAFF_ISJ_2026"; // Choose your Staff-specific code
 
-    if ($role === 'teacher' && $teacher_auth_code !== $OFFICIAL_STAFF_CODE) {
-        header("Location: signup.php?error=invalid_code");
-        exit();
-    }
+// Check Teacher Code
+if ($role === 'teacher' && $teacher_auth_code !== $OFFICIAL_TEACHER_CODE) {
+    header("Location: signup.php?error=invalid_code");
+    exit();
+}
+
+// NEW: Check Staff Code
+if ($role === 'staff' && $teacher_auth_code !== $OFFICIAL_STAFF_CODE) {
+    header("Location: signup.php?error=invalid_code");
+    exit();
+}
     // ---------------------------------
 
     if ($password !== $confirm_password) {
@@ -178,17 +188,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <option value="student">Student</option>
                         <option value="teacher">Teacher</option>
                         <option value="parent">Parent</option>
+                        <option value="staff">Staff Member</option>
                     </select>
                 </div>
 
-                <div class="form-group" id="teacherCodeGroup" style="display: none;">
-                <label style="color: #061428; font-weight: bold;">Teacher Authorization Code</label>
+             <div class="form-group" id="teacherCodeGroup" style="display: none;">
+                <label id="authCodeLabel" style="color: #061428; font-weight: bold;">Authorization Code</label>
                  <div class="password-container">
-                <input type="password" name="teacher_auth_code" id="teacher_auth_code" placeholder="Enter IUSJC Staff Code">
-               <i class="fas fa-eye toggle-password" id="toggleTeacherCode"></i>
-              </div>
-           <small style="color: #666;">This code is required for Teacher accounts.</small>
-          </div>
+                  <input type="password" name="teacher_auth_code" id="teacher_auth_code" placeholder="Enter Authorization Code">
+                  <i class="fas fa-eye toggle-password" id="toggleTeacherCode"></i>
+                 </div>
+                  <small id="authCodeHelp" style="color: #666;">This code is required for your account type.</small>
+                 </div>
+                <!-- </div> -->
 
                 <div class="form-group">
                     <label>Username</label>
@@ -224,20 +236,33 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <script>
         // Logic to show/hide the Teacher Code field
         
-        const roleSelect = document.querySelector('#roleSelect');
-        const teacherGroup = document.querySelector('#teacherCodeGroup');
-        const teacherInput = document.querySelector('#teacher_auth_code');
+       const roleSelect = document.querySelector('#roleSelect');
+const teacherGroup = document.querySelector('#teacherCodeGroup');
+const teacherInput = document.querySelector('#teacher_auth_code');
+const authLabel = document.querySelector('#authCodeLabel'); // Added this
 
-        function toggleTeacherCode() {
-            if (roleSelect.value === 'teacher') {
-                teacherGroup.style.display = 'block';
-                teacherInput.required = true;
-            } else {
-                teacherGroup.style.display = 'none';
-                teacherInput.required = false;
-                teacherInput.value = ''; // Clear it if they switch back to Student
-            }
+function toggleTeacherCode() {
+    const selectedRole = roleSelect.value;
+    
+    if (selectedRole === 'teacher' || selectedRole === 'staff') {
+        teacherGroup.style.display = 'block';
+        teacherInput.required = true;
+        
+        // Dynamic labels to guide the user
+        if (selectedRole === 'teacher') {
+            authLabel.innerText = "Teacher Authorization Code";
+            teacherInput.placeholder = "Enter IUSJC Teacher Code";
+        } else {
+            authLabel.innerText = "Staff Authorization Code";
+            teacherInput.placeholder = "Enter ISJ Staff Code";
         }
+        
+    } else {
+        teacherGroup.style.display = 'none';
+        teacherInput.required = false;
+        teacherInput.value = ''; 
+    }
+}
 
         // Password visibility and real-time validation
         const togglePassword = document.querySelector('#togglePassword');

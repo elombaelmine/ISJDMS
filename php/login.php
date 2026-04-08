@@ -71,6 +71,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $_SESSION['fullname'] = $user['fullname']; // Useful for the greeting on the next page
                 header("Location: admin_verify_2fa.php");
                 exit();
+
             }
             // 4. Standard User Login (Student/Teacher/Parent)
             else {

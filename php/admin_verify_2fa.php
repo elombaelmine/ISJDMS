@@ -18,12 +18,39 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $admin_id = $_SESSION['temp_admin_id'];
 
     // 2. Fetch the Secret Key for this specific Admin from the DB
-    $stmt = $conn->prepare("SELECT google_auth_secret FROM registration WHERE id = ?");
+    // $stmt = $conn->prepare("SELECT google_auth_secret FROM registration WHERE id = ?");
+    // $stmt->bind_param("i", $admin_id);
+    // $stmt->execute();
+    // $result = $stmt->get_result();
+    // $row = $result->fetch_assoc();
+    // $secret = $row['google_auth_secret'];
+
+    // // 3. Verify the 6-digit code from their phone
+    // $checkResult = $ga->verifyCode($secret, $user_code, 2); 
+
+    // if ($checkResult) {
+    //     // SUCCESS! Promote them to a full session
+    //     $_SESSION['user_id'] = $admin_id;
+    //     $_SESSION['role'] = 'admin';
+    //     // Inside admin_verify_2fa.php after the code is verified:
+    //     $_SESSION['user_id'] = $user['id'];
+    //     $_SESSION['role'] = 'admin';
+    //     $_SESSION['fullname'] = $user['fullname']; // THIS IS THE IMPORTANT ONE
+        
+    //     // Clean up the temporary ID
+    //     unset($_SESSION['temp_admin_id']); 
+        
+    //     header("Location: admindashboard.php");
+    //     exit();
+    // } 
+    // 2. Fetch the Secret AND Fullname for this specific Admin
+    $stmt = $conn->prepare("SELECT google_auth_secret, fullname FROM registration WHERE id = ?");
     $stmt->bind_param("i", $admin_id);
     $stmt->execute();
     $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
-    $secret = $row['google_auth_secret'];
+    $user = $result->fetch_assoc(); // Now $user is defined!
+    
+    $secret = $user['google_auth_secret'];
 
     // 3. Verify the 6-digit code from their phone
     $checkResult = $ga->verifyCode($secret, $user_code, 2); 
@@ -32,13 +59,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // SUCCESS! Promote them to a full session
         $_SESSION['user_id'] = $admin_id;
         $_SESSION['role'] = 'admin';
+        $_SESSION['fullname'] = $user['fullname']; // Now this works perfectly!
         
         // Clean up the temporary ID
         unset($_SESSION['temp_admin_id']); 
         
         header("Location: admindashboard.php");
         exit();
-    } else {
+    }
+    else {
         $error = "Invalid code. Please check your app and try again.";
     }
 }

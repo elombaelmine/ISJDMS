@@ -264,3 +264,70 @@ body {
     font-size: 30px;
     color: #ccc; /* Light grey icon like screenshot */
 }
+
+/* Document Specific Badges */
+.type-badge {
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+.type-badge.folder { background: #fff3cd; color: #856404; }
+.type-badge.file { background: #d1ecf1; color: #0c5460; }
+
+.role-pill {
+    background: #e9ecef;
+    padding: 3px 10px;
+    border-radius: 5px;
+    font-size: 11px;
+    color: var(--isj-blue);
+    font-weight: bold;
+}
+
+/* Ensure the header buttons align with user management */
+.page-title {
+    margin: 0;
+    color: var(--isj-blue);
+    font-size: 1.5rem;
+}
+
+.folder-tree span:hover {
+    color: #D4AF37 !important;
+    text-decoration: underline;
+}
+
+/* Scrollbar styling for the tree section */
+.tree-section::-webkit-scrollbar {
+    width: 5px;
+}
+.tree-section::-webkit-scrollbar-thumb {
+    background: #1a2a44;
+    border-radius: 10px;
+}
+.folder-hierarchy ul {
+    list-style: none;
+    padding-left: 30px;
+    border-left: 2px solid #061428;
+    margin: 10px 0;
+}
+
+.folder-hierarchy li {
+    margin: 15px 0;
+    font-size: 1.1rem;
+    color: #061428;
+    font-weight: 500;
+}
+
+.folder-hierarchy .folder-actions {
+    float: right;
+    margin-left: 20px;
+}
+.count-badge {
+    background: #f1f3f5;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #061428;
+    border: 1px solid #dee2e6;
+}
