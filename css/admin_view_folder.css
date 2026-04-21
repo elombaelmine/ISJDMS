@@ -1,0 +1,112 @@
+:root {
+    --isj-blue: #05224b;
+    --isj-gold: #D4AF37;
+    --white: #ffffff;
+    --light-grey: #f8f9fa;
+    --border-color: #e0e0e0;
+}
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f6f9;
+}
+
+.admin-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar Styling */
+.sidebar {
+    width: 260px;
+    background: var(--isj-blue);
+    color: var(--white);
+    padding: 20px;
+    flex-shrink: 0;
+}
+
+.sidebar-logo img { width: 80%; margin-bottom: 30px; }
+
+.nav-item {
+    display: block;
+    color: #bdc3c7;
+    padding: 12px;
+    text-decoration: none;
+    margin-bottom: 5px;
+    border-radius: 4px;
+}
+
+.nav-item.active { background: var(--isj-gold); color: var(--isj-blue); font-weight: bold; }
+
+/* Main Content */
+.main-content { flex-grow: 1; padding: 30px; }
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--white);
+    padding: 15px 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.breadcrumb a { color: var(--isj-gold); text-decoration: none; margin-right: 10px; }
+.user-info { display: flex; align-items: center; gap: 10px; }
+.user-avatar { background: var(--isj-blue); color: white; padding: 8px 12px; border-radius: 50%; }
+
+/* Table Section */
+.content-body { margin-top: 30px; }
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.table-container {
+    background: var(--white);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-table th {
+    background: var(--isj-blue);
+    color: var(--white);
+    padding: 15px;
+    text-align: left;
+    font-size: 0.85rem;
+}
+
+.admin-table td {
+    padding: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.icon-pdf { color: #e74c3c; margin-right: 10px; }
+
+.actions a {
+    color: var(--isj-blue);
+    margin-left: 15px;
+    font-size: 1.1rem;
+    text-decoration: none;
+}
+
+.actions a.delete-link { color: #e74c3c; }
+
+.btn-add {
+    background: var(--isj-blue);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+}

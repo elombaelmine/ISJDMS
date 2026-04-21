@@ -1,5 +1,8 @@
 <?php
-function renderTree($conn, $parent_id = NULL) {
+// Get all currently "open" folders from the URL (e.g., ?open=1,5,12)
+$open_folders = isset($_GET['open']) ? explode(',', $_GET['open']) : [];
+
+function renderAccordionTree($conn, $parent_id = NULL, $open_folders = []) {
     $sql = ($parent_id === NULL) 
             ? "SELECT * FROM documents WHERE parent_id IS NULL AND type = 'folder' ORDER BY name ASC" 
             : "SELECT * FROM documents WHERE parent_id = $parent_id AND type = 'folder' ORDER BY name ASC";
@@ -7,29 +10,53 @@ function renderTree($conn, $parent_id = NULL) {
     $result = $conn->query($sql);
 
     if ($result->num_rows > 0) {
-        echo '<ul style="list-style: none; padding-left: 25px; border-left: 1px dashed #061428; margin-top: 10px;">';
+        echo '<ul style="list-style: none; padding-left: 20px; border-left: 1px dashed #061428; margin-top: 5px;">';
         while ($row = $result->fetch_assoc()) {
-            echo '<li style="margin: 10px 0; display: flex; align-items: center; justify-content: space-between; max-width: 500px;">';
-            echo '<span><i class="fas fa-folder" style="color: #D4AF37; margin-right: 10px;"></i>';
-            echo '<strong style="color: #061428; font-size: 1rem;">' . htmlspecialchars($row['name']) . '</strong></span>';
+            $id = $row['id'];
+            $isOpen = in_array($id, $open_folders);
             
-            // --- ACTION BUTTONS CONTAINER ---
-            echo '<div style="display: flex; gap: 15px; align-items: center;">';
-                
-                // ADDED: The Edit/Modify Icon
-                echo '<a href="admin_roles/edit_item.php?id='.$row['id'].'" title="Modify Folder" style="color: #3498db; font-size: 0.9rem; text-decoration: none;">';
-                echo '<i class="fas fa-edit"></i></a>';
+            // Build the toggle URL for the icon
+            if ($isOpen) {
+                $new_open = array_diff($open_folders, [$id]);
+            } else {
+                $new_open = array_merge($open_folders, [$id]);
+            }
+            $toggle_url = "?tab=plan&open=" . implode(',', $new_open);
 
-                // Existing Delete Icon
-                echo '<a href="admin_roles/delete_item.php?id='.$row['id'].'" onclick="return confirm(\'Delete this folder and everything inside?\')" title="Delete" style="color: #e74c3c; font-size: 0.9rem; text-decoration: none;">';
-                echo '<i class="fas fa-trash"></i></a>';
-            
+            // INTELLIGENT CHECK: Does this folder have sub-folders?
+            $check_sub = $conn->query("SELECT id FROM documents WHERE parent_id = $id AND type = 'folder' LIMIT 1");
+            $hasSubFolders = ($check_sub->num_rows > 0);
+
+            // Determine if clicking the name opens a page or expands the tree
+            $name_link = $hasSubFolders ? $toggle_url : "admin_view_folder.php?id=" . $id;
+
+            echo '<li style="margin: 8px 0;">';
+            echo '<div style="display: flex; align-items: center; justify-content: space-between; max-width: 550px;">';
+                
+                echo '<div style="display: flex; align-items: center;">';
+                    // The icon ALWAYS toggles the accordion
+                    echo '<a href="'.$toggle_url.'" style="text-decoration: none; margin-right: 10px;">';
+                        echo '<i class="fas '.($isOpen ? 'fa-folder-open' : 'fa-folder').'" style="color: #D4AF37;"></i>';
+                    echo '</a>';
+
+                    // The name opens the table ONLY if it's a leaf folder
+                    echo '<a href="'.$name_link.'" style="text-decoration: none; color: #061428; font-weight: 500;">';
+                        echo htmlspecialchars($row['name']);
+                    echo '</a>';
+                echo '</div>';
+
+                // Action Buttons (Edit/Delete)
+                echo '<div style="display: flex; gap: 10px; opacity: 0.5;">';
+                    echo '<a href="admin_roles/edit_item.php?id='.$id.'" style="color: #3498db;"><i class="fas fa-edit fa-xs"></i></a>';
+                    echo '<a href="admin_roles/delete_item.php?id='.$id.'" onclick="return confirm(\'Delete?\')" style="color: #e74c3c;"><i class="fas fa-trash fa-xs"></i></a>';
+                echo '</div>';
             echo '</div>';
-            // --------------------------------
-            
+
+            // Only show sub-folders recursively; the table is now in admin_view_folder.php
+            if ($isOpen) {
+                renderAccordionTree($conn, $id, $open_folders);
+            }
             echo '</li>';
-            
-            renderTree($conn, $row['id']);
         }
         echo '</ul>';
     }
@@ -332,9 +359,9 @@ $docs_result = $conn->query($docs_query);
         </button>
     </div>
 
-    <div class="data-table-container" style="background: #fff; padding: 30px; border-radius: 8px;">
+    <div class="data-table-container" style="background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
         <div class="folder-hierarchy">
-            <?php renderTree($conn); ?>
+            <?php renderAccordionTree($conn, NULL, $open_folders); ?>
         </div>
     </div>
 </section>
