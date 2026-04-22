@@ -83,6 +83,20 @@ $can_upload = ($user_role === 'teacher' || $user_role === 'staff');
         <div class="user-avatar" style="text-transform: uppercase;"><?php echo htmlspecialchars($initial); ?></div>
     </div>
 </header>
+<?php if(isset($_GET['status']) && $_GET['status'] == 'success'): ?>
+    <div class="alert-box" 
+         style="padding: 15px; margin-bottom: 20px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; 
+                background: #e6fffa; border: 1px solid #b2f5ea; color: #088f8f; font-family: 'Segoe UI', sans-serif; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+        
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-check-circle"></i>
+            <span>Excellent! The document has been delivered successfully.</span>
+        </div>
+        
+        <button onclick="this.parentElement.style.display='none'" 
+                style="background:none; border:none; color:inherit; cursor:pointer; font-size: 1.2rem; font-weight:bold;">&times;</button>
+    </div>
+<?php endif; ?>
 
         <div id="nouveautes-section" style="display: none;">
             <div class="section-title">

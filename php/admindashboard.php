@@ -236,38 +236,15 @@ $docs_result = $conn->query($docs_query);
     <?php endif; ?>
     <?php if(isset($_GET['tab']) && $_GET['tab'] == 'docs'): ?>
 <section id="tab-docs" class="admin-tab">
-<?php if(isset($_GET['status'])): ?>
-    <div class="alert-box" 
-         style="padding: 15px; margin-bottom: 20px; border-radius: 8px; display: flex; align-items: center; gap: 10px; 
-                background: <?php echo ($_GET['status'] == 'success' || $_GET['status'] == 'updated') ? '#e6fffa' : '#fff5f5'; ?>; 
-                border: 1px solid <?php echo ($_GET['status'] == 'success' || $_GET['status'] == 'updated') ? '#b2f5ea' : '#feb2b2'; ?>;
-                color: <?php echo ($_GET['status'] == 'success' || $_GET['status'] == 'updated') ? '#088f8f' : '#e53e3e'; ?>;">
-        
-        <i class="fas <?php echo ($_GET['status'] == 'success' || $_GET['status'] == 'updated') ? 'fa-check-circle' : 'fa-exclamation-circle'; ?>"></i>
-        <span>
-            <?php 
-                if($_GET['status'] == 'success') echo "Excellent! The document has been delivered successfully.";
-                elseif($_GET['status'] == 'updated') echo "The item has been modified successfully.";
-                else echo "Something went wrong. Please check your internet or mail settings.";
-            ?>
-        </span>
-    </div>
-<?php endif; ?>
+
 
 <?php if(isset($_GET['status'])): ?>
-    <div class="alert-box <?php echo $_GET['status'] == 'success' ? 'alert-success' : 'alert-error'; ?>" 
-         style="padding: 15px; margin-bottom: 20px; border-radius: 8px; display: flex; align-items: center; gap: 10px; 
-                background: <?php echo $_GET['status'] == 'success' ? '#e6fffa' : '#fff5f5'; ?>; 
-                border: 1px solid <?php echo $_GET['status'] == 'success' ? '#b2f5ea' : '#feb2b2'; ?>;
-                color: <?php echo $_GET['status'] == 'success' ? '#088f8f' : '#e53e3e'; ?>;">
-        
-        <i class="fas <?php echo $_GET['status'] == 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'; ?>"></i>
-        <span>
-            <?php 
-                if($_GET['status'] == 'success') echo "Excellent! The document has been delivered successfully.";
-                else echo "Something went wrong. Please check your internet or mail settings.";
-            ?>
-        </span>
+    <div class="alert-box" style="padding: 15px; margin-bottom: 20px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; background: #e6fffa; border: 1px solid #b2f5ea; color: #088f8f;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-check-circle"></i>
+            <span>Excellent! The action was successful.</span>
+        </div>
+        <button onclick="this.parentElement.style.display='none'" style="background:none; border:none; color:inherit; cursor:pointer; font-weight:bold;">&times;</button>
     </div>
 <?php endif; ?>
 

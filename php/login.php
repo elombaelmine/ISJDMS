@@ -69,6 +69,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             elseif ($user['role'] === 'admin') {
                 $_SESSION['temp_admin_id'] = $user['id']; // Temporary storage
                 $_SESSION['fullname'] = $user['fullname']; // Useful for the greeting on the next page
+                $_SESSION['email'] = $user['email']; // <--- ADD THIS
+                 $_SESSION['role'] = $user['role'];   // <--- ADD THIS       
                 header("Location: admin_verify_2fa.php");
                 exit();
 

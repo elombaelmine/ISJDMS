@@ -3,18 +3,22 @@ session_start();
 include("../database.php");
 
 // 1. ALLOW ALL LOGGED-IN ROLES
-// We removed the "&& $_SESSION['role'] !== 'admin'" check
+// Access is granted as long as a session user_id exists
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../login.php");
     exit();
 }
 
+// Identify the role for dynamic redirection
 $user_role = $_SESSION['role'] ?? '';
 
 if (!isset($_GET['id'])) {
-    // Redirect back based on role if ID is missing
-    $redirect = ($user_role === 'admin') ? "../admindashboard.php?tab=docs" : "../userdashboard.php";
-    header("Location: $redirect");
+    // Redirect back to the correct dashboard if the document ID is missing
+    if ($user_role === 'admin') {
+        header("Location: ../admindashboard.php?tab=docs");
+    } else {
+        header("Location: ../userdashboard.php");
+    }
     exit();
 }
 
@@ -73,7 +77,7 @@ if (!$doc) {
                 <span id="loader" style="display: none;"><i class="fas fa-spinner fa-spin"></i> Sending...</span>
             </button>
 
-            <a onclick="window.history.back();" class="cancel-link">Cancel</a>
+            <a href="<?php echo ($user_role === 'admin') ? '../admindashboard.php?tab=docs' : '../userdashboard.php'; ?>" class="cancel-link">Cancel</a>
         </form>
     </div>
 
