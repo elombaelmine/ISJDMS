@@ -343,3 +343,35 @@ body {
     background: #f0f0f0;
     color: var(--dark-blue);
 }
+
+.folder-card-new {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    border-left: 5px solid #D4AF37; /* The gold accent */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin-bottom: 15px;
+    width: 320px; /* Adjust based on your grid */
+}
+
+.folder-card-new:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.folder-icon {
+    font-size: 2rem;
+    color: #061428;
+}
+.sidebar-link, .sidebar-link:visited, .sidebar-link:active {
+    color: white !important;
+    text-decoration: none !important;
+}
+.sidebar-link:hover {
+    color: #D4AF37 !important;
+}
