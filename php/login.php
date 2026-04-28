@@ -18,7 +18,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (password_verify($password, $user['password'])) {
             
             // 1. Check if account is Disabled
-            if ($user['status'] === 'Disabled') { 
+            if ($user['status'] === 'disabled') { 
                 $error_msg = "Your account is currently disabled. Please contact the Admin.";
             } 
             // 2. Check for pending OTP (For Admin-created accounts)

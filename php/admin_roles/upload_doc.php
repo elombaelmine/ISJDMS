@@ -105,20 +105,33 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !isset($_POST['send_admin_request'])
         }
         elseif ($file_ext == 'pdf') {
             try {
-                // Custom Autoloader for Smalot PDFParser (Manual Install)
-                spl_autoload_register(function ($class) {
-                    $prefix = 'Smalot\\PdfParser\\';
-                    $base_dir = __DIR__ . '/libs/pdfparser/src/Smalot/PdfParser/';
-                    $len = strlen($prefix);
-                    if (strncmp($prefix, $class, $len) !== 0) return;
-                    $relative_class = substr($class, $len);
-                    $file = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
-                    if (file_exists($file)) { require $file; }
-                });
+                // Pointing to: ISJDMS/php/libs/pdfparser/src/Smalot/PdfParser/
+                $lib_path = realpath(dirname(__DIR__) . '/libs/pdfparser/src/Smalot/PdfParser/');
 
-                $parser = new \Smalot\PdfParser\Parser();
-                $pdf = $parser->parseFile($target_file);
-                $extracted_text = $pdf->getText();
+                if ($lib_path && is_dir($lib_path)) {
+                    // This autoloader handles all the internal sub-classes automatically
+                    spl_autoload_register(function ($class) use ($lib_path) {
+                        $prefix = 'Smalot\\PdfParser\\';
+                        if (strncmp($prefix, $class, strlen($prefix)) === 0) {
+                            $relative_class = substr($class, strlen($prefix));
+                            $file = $lib_path . '/' . str_replace('\\', '/', $relative_class) . '.php';
+                            if (file_exists($file)) {
+                                require_once $file;
+                            }
+                        }
+                    });
+
+                    // Check if the main entry file exists
+                    if (file_exists($lib_path . '/Parser.php')) {
+                        $parser = new \Smalot\PdfParser\Parser();
+                        $pdf = $parser->parseFile($target_file);
+                        $extracted_text = $pdf->getText();
+                    } else {
+                        $extracted_text = "PDF Error: Parser.php missing in " . $lib_path;
+                    }
+                } else {
+                    $extracted_text = "PDF Error: Library directory not found.";
+                }
             } catch (Exception $e) {
                 $extracted_text = "PDF Extraction failed: " . $e->getMessage();
             }

@@ -6,6 +6,8 @@ if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
 }
+// Determine which tab should be open. Default is now 'all_files'
+$active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'all_files';
 
 $fullname = $_SESSION['fullname'];
 // Retrieve the role from the session
@@ -79,8 +81,8 @@ function get_total_files_count($conn, $parent_id, $user_role) {
                 <i class="fas fa-graduation-cap"></i> Advanced search
             </a>
           <a href="javascript:void(0)" id="btn-content-search" class="nav-item">
-    <i class="fas fa-search-plus" style="color: #D4AF37;"></i>Search Within Files
-</a>
+                   <i class="fas fa-search-plus" style="color: #D4AF37;"></i>Search Within Files
+             </a>
            <a href="#" class="nav-item" id="btn-plan"><i class="fas fa-book-reader"></i> Plan</a>
         </nav>
 
@@ -201,21 +203,21 @@ function get_total_files_count($conn, $parent_id, $user_role) {
             <div class="input-row">
                 <div class="field-group">
                     <label>Title (file)</label>
-                    <input type="text" name="titre" class="search-input" placeholder="Enter title..." value="<?php echo htmlspecialchars($_GET['titre'] ?? ''); ?>" required>
+                    <input type="text" name="titre" class="search-input" placeholder="Enter title..." value="" required>
                 </div>
                 <div class="field-group">
                     <label>Author</label>
-                    <input type="text" name="auteur" class="search-input" placeholder="Enter author name..." value="<?php echo htmlspecialchars($_GET['auteur'] ?? ''); ?>" required>
+                    <input type="text" name="auteur" class="search-input" placeholder="Enter author name..." value="" required>
                 </div>
             </div>
             <div class="input-row">
                 <div class="field-group">
                     <label>Specific Keywords (File Content)</label>
-                    <input type="text" name="description" class="search-input" placeholder="e.g. 'exam', 'finance', 'report'..." value="<?php echo htmlspecialchars($_GET['description'] ?? ''); ?>" required>
+                    <input type="text" name="description" class="search-input" placeholder="e.g. 'exam', 'finance', 'report'..." value="" required>
                 </div>
                 <div class="field-group">
                     <label>Name of folder</label>
-                    <input type="text" name="filename" class="search-input" placeholder="Enter folder name..." value="<?php echo htmlspecialchars($_GET['filename'] ?? ''); ?>" required>
+                    <input type="text" name="filename" class="search-input" placeholder="Enter folder name..." value="" required>
                 </div>
             </div>
             <div class="input-row">
