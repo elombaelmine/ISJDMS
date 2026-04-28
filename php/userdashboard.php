@@ -26,24 +26,38 @@ $recent_query = "SELECT * FROM documents
                  LIMIT 10";
 $recent_res = $conn->query($recent_query);
 
-function get_total_files_count($conn, $parent_id, $user_role) {
-    // 1. Count files directly in this folder
-    $file_q = "SELECT COUNT(*) as c FROM documents 
-               WHERE parent_id = $parent_id AND type = 'file' 
-               AND (FIND_IN_SET('$user_role', viewed_by) OR viewed_by = 'all')";
-    $file_count = $conn->query($file_q)->fetch_assoc()['c'];
+// 1. Function for actual documents (.pdf, .docx, etc.)
+function get_deep_file_count($conn, $folder_id, $user_role) {
+    if (empty($user_role)) return 0;
+    $total = 0;
+    $sql = "SELECT COUNT(*) as c FROM documents 
+            WHERE parent_id = $folder_id 
+            AND type = 'file' 
+            AND (FIND_IN_SET('$user_role', viewed_by) OR viewed_by = 'all')";
+    $res = $conn->query($sql);
+    $total += (int)$res->fetch_assoc()['c'];
 
-    // 2. Find all sub-folders in this folder
-    $sub_folder_q = "SELECT id FROM documents 
-                     WHERE parent_id = $parent_id AND type = 'folder'";
-    $sub_folders = $conn->query($sub_folder_q);
-
-    // 3. For each sub-folder, call this same function (Recursion)
+    $sub_folders = $conn->query("SELECT id FROM documents WHERE parent_id = $folder_id AND type = 'folder'");
     while ($sub = $sub_folders->fetch_assoc()) {
-        $file_count += get_total_files_count($conn, $sub['id'], $user_role);
+        $total += get_deep_file_count($conn, $sub['id'], $user_role);
     }
+    return $total;
+}
 
-    return $file_count;
+// 2. Function for the folders themselves
+function get_deep_folder_count($conn, $folder_id, $user_role) {
+    if (empty($user_role)) return 0;
+    $total = 0;
+    $sql = "SELECT id FROM documents 
+            WHERE parent_id = $folder_id 
+            AND type = 'folder' 
+            AND (FIND_IN_SET('$user_role', viewed_by) OR viewed_by = 'all')";
+    $res = $conn->query($sql);
+    while ($sub = $res->fetch_assoc()) {
+        $total++; 
+        $total += get_deep_folder_count($conn, $sub['id'], $user_role);
+    }
+    return $total;
 }
 ?>
 <!DOCTYPE html>
@@ -406,7 +420,7 @@ function validateSearch() {
                 </tbody>
             </table>
         </div>
-
+ 
     <?php else: ?>
         <div class="folder-grid" style="display: flex; flex-wrap: wrap; gap: 20px; padding: 10px;">
     <?php
@@ -417,7 +431,9 @@ function validateSearch() {
         $folder_id = $row['id'];
         
         // Use your working recursive function
-        $total_files = get_total_files_count($conn, $folder_id, $user_role);
+      // Get separate counts for folders and files
+        $total_folders = get_deep_folder_count($conn, $folder_id, $user_role);
+        $total_files = get_deep_file_count($conn, $folder_id, $user_role);
         
         // Count just the immediate sub-folders
         $sub_q = "SELECT COUNT(*) as c FROM documents WHERE parent_id = $folder_id AND type = 'folder'";
@@ -438,9 +454,9 @@ function validateSearch() {
                     <?php echo htmlspecialchars($row['name']); ?>
                 </h4>
                 <p style="margin: 6px 0 0; color: #555; font-size: 0.85rem; font-family: sans-serif;">
-                    <span style="font-weight: 600;"><?php echo $sub_count; ?></span> Sub-folders • 
+                    <span style="font-weight: 600;"><?php echo $total_folders; ?></span> Folders • 
                     <span style="font-weight: 600;"><?php echo $total_files; ?></span> Total Files
-                </p>
+              </p>
             </div>
         </div>
     <?php } ?>
