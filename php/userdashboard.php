@@ -237,7 +237,7 @@ function get_deep_folder_count($conn, $folder_id, $user_role) {
             <div class="input-row">
                 <div class="field-group" style="width: 100%;">
                     <label>Date of Creation</label>
-                    <input type="date" name="date_creation" class="search-input" value="<?php echo htmlspecialchars($_GET['date_creation'] ?? ''); ?>" required>
+                    <input type="date" name="date_creation" class="search-input" value="" required>
                 </div>
             </div>
 
@@ -327,13 +327,16 @@ function validateSearch() {
         <h2 style="color: #061428; margin-bottom: 10px;"><i class="fas fa-file-alt"></i> Deep Content Search</h2>
         <p style="color: #666; margin-bottom: 25px;">Search specifically <strong>inside</strong> the text of your documents.</p>
         
-        <form action="" method="POST" style="max-width: 600px; margin: 0 auto; display: flex; gap: 10px;">
-            <input type="text" name="content_keyword" placeholder="Enter keyword found inside files..." required 
-                   style="flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 5px;">
+       <form action="" method="POST" style="max-width: 600px; margin: 0 auto; display: flex; gap: 10px;">
+            <input type="hidden" name="tab" value="content">
+
+            <input type="text" name="content_keyword" placeholder="Enter any word found inside files(.pdf,.docx,.txt)..." required 
+                style="flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 5px;">
+            
             <button type="submit" name="run_content_search" style="background: #061428; color: #D4AF37; padding: 0 25px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
                 Scan Files
             </button>
-        </form>
+    </form>
     </div>
 
     <?php if (isset($_POST['run_content_search'])): 

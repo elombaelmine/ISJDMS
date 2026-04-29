@@ -46,6 +46,22 @@
                 </div>
             </div>
 
+            <div class="info-card highlight-card">
+                <h3><i class="fas fa-lightbulb"></i> Pro-Tip: Mastering Search & Upload</h3>
+                <p>To help the community navigate efficiently, the <strong>Description field</strong> during upload is crucial. This field acts as the "brain" of our search engine.</p>
+                
+                <div class="upload-guide" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
+                    <div style="margin-bottom: 15px;">
+                        <strong style="color: #1a237e;"><i class="fas fa-tags"></i> Use Keywords:</strong>
+                        <p style="font-size: 0.9rem; margin-top: 5px;">Instead of generic names, add keywords like <em>"Thermodynamics Exam 2025"</em> or <em>"Financial Audit Level 3"</em> in the description. This allows others to find the file even if they don't know the exact filename.</p>
+                    </div>
+                    <div>
+                        <strong style="color: #1a237e;"><i class="fas fa-map-signs"></i> Why it matters:</strong>
+                        <p style="font-size: 0.9rem; margin-top: 5px;">A well-described file reduces search time by 80% and ensures that your contributions are easily accessible to authorized personnel and students.</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="mission-statement">
                 <h3>Our Objective</h3>
                 <p>In line with the 2026 ISI integration goals, this project aims to eliminate paper waste and improve the digital workflow efficiency within our engineering school.</p>

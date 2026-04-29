@@ -85,10 +85,34 @@ body {
     border-left: 5px solid var(--isj-navy);
 }
 
+/* Highlighting the new Pro-Tip card */
+.info-card.highlight-card {
+    border-left: 5px solid var(--isj-gold);
+    background-color: #fffdf5; /* Subtle gold tint */
+}
+
 .info-card h3 {
     font-size: 1.5rem;
     color: var(--isj-navy);
     margin-bottom: 15px;
+}
+
+.info-card h3 i {
+    margin-right: 10px;
+    color: var(--isj-gold);
+}
+
+/* New Upload Guide Styles */
+.upload-guide strong {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.05rem;
+}
+
+.upload-guide p {
+    color: var(--text-muted);
+    margin-bottom: 10px;
 }
 
 /* Features Grid */
@@ -154,4 +178,5 @@ body {
 @media (max-width: 600px) {
     .about-header h1 { font-size: 2rem; }
     .about-container { margin: 30px auto; }
+    .info-card { padding: 25px; }
 }
