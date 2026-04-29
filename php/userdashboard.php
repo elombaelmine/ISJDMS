@@ -2,6 +2,21 @@
 session_start();
 include("database.php");
 
+// If the user clicks the 'Dashboard' link or we want a clean state
+if (isset($_GET['reset'])) {
+    // Redirect to the clean URL without any search parameters
+    header("Location: userdashboard.php");
+    exit();
+}
+// 2. THE FRESH LOAD CHECK: Determine if we should show results or not
+$results = null; // Default to no results
+$is_searching = isset($_GET['perform_search']) || isset($_POST['run_content_search']);
+
+if ($is_searching) {
+    // ONLY run your search SQL logic here
+    // (Place the $query building and $results = $conn->query code inside this block)
+}
+
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
@@ -214,30 +229,31 @@ function get_deep_folder_count($conn, $folder_id, $user_role) {
         </div>
         
         <form action="" method="GET" id="searchForm">
+            <input type="hidden" name="tab" value="advanced">
             <div class="input-row">
                 <div class="field-group">
                     <label>Title (file)</label>
-                    <input type="text" name="titre" class="search-input" placeholder="Enter title..." value="" required>
+                    <input type="text" name="titre" class="search-input" placeholder="Enter title..." value="">
                 </div>
                 <div class="field-group">
                     <label>Author</label>
-                    <input type="text" name="auteur" class="search-input" placeholder="Enter author name..." value="" required>
+                    <input type="text" name="auteur" class="search-input" placeholder="Enter author name..." value="">
                 </div>
             </div>
             <div class="input-row">
                 <div class="field-group">
                     <label>Specific Keywords (File Content)</label>
-                    <input type="text" name="description" class="search-input" placeholder="e.g. 'exam', 'finance', 'report'..." value="" required>
+                    <input type="text" name="description" class="search-input" placeholder="e.g. 'exam', 'finance', 'report'..." value="">
                 </div>
                 <div class="field-group">
                     <label>Name of folder</label>
-                    <input type="text" name="filename" class="search-input" placeholder="Enter folder name..." value="" required>
+                    <input type="text" name="filename" class="search-input" placeholder="Enter folder name..." value="">
                 </div>
             </div>
             <div class="input-row">
                 <div class="field-group" style="width: 100%;">
                     <label>Date of Creation</label>
-                    <input type="date" name="date_creation" class="search-input" value="" required>
+                    <input type="date" name="date_creation" class="search-input" value="">
                 </div>
             </div>
 
@@ -250,32 +266,44 @@ function get_deep_folder_count($conn, $folder_id, $user_role) {
     </div>
 
     <?php if (isset($_GET['perform_search'])): 
-        $titre = trim($_GET['titre'] ?? '');
-        $auteur = trim($_GET['auteur'] ?? '');
-        $desc = trim($_GET['description'] ?? '');
-        $folder = trim($_GET['filename'] ?? '');
-        $date_c = trim($_GET['date_creation'] ?? '');
+    $titre = trim($_GET['titre'] ?? '');
+    $auteur = trim($_GET['auteur'] ?? '');
+    $desc = trim($_GET['description'] ?? '');
+    $folder = trim($_GET['filename'] ?? '');
+    $date_c = trim($_GET['date_creation'] ?? '');
 
-        // Logic remains the same, just adding the date filter
-        $query = "SELECT * FROM documents WHERE type = 'file' AND (FIND_IN_SET('$user_role', viewed_by) OR viewed_by = 'all')";
+    // 1. Base Query (The starting point)
+    $query = "SELECT * FROM documents WHERE type = 'file' AND (FIND_IN_SET('$user_role', viewed_by) OR viewed_by = 'all')";
 
-        if (!empty($titre)) { $query .= " AND name LIKE '%" . $conn->real_escape_string($titre) . "%'"; }
-        if (!empty($auteur)) { $query .= " AND author LIKE '%" . $conn->real_escape_string($auteur) . "%'"; }
-        if (!empty($desc)) { $query .= " AND description LIKE '%" . $conn->real_escape_string($desc) . "%'"; }
-        if (!empty($date_c)) { $query .= " AND DATE(created_at) = '" . $conn->real_escape_string($date_c) . "'"; }
+    // 2. Add filters ONLY if they are filled in
+    if (!empty($titre)) { 
+        $query .= " AND name LIKE '%" . $conn->real_escape_string($titre) . "%'"; 
+    }
+    
+    if (!empty($auteur)) { 
+        $query .= " AND author LIKE '%" . $conn->real_escape_string($auteur) . "%'"; 
+    }
+    
+    if (!empty($desc)) { 
+        $query .= " AND description LIKE '%" . $conn->real_escape_string($desc) . "%'"; 
+    }
 
-       // --- UPDATED FOLDER LOGIC ---
+    // --- FOLDER LOGIC (Only if folder name is provided) ---
     if (!empty($folder)) {
-        $query .= " AND parent_id IN (SELECT id FROM documents WHERE name LIKE '%" . $conn->real_escape_string($folder) . "%' AND type='folder')";
+        $folder_safe = $conn->real_escape_string($folder);
+        $query .= " AND parent_id IN (SELECT id FROM documents WHERE name LIKE '%$folder_safe%' AND type='folder')";
     }
 
-    // --- UPDATED DATE LOGIC ---
+    // --- DATE LOGIC (Only if date is provided) ---
     if (!empty($date_c)) { 
-        $query .= " AND DATE(created_at) = '" . $conn->real_escape_string($date_c) . "'"; 
+        $date_safe = $conn->real_escape_string($date_c);
+        $query .= " AND DATE(created_at) = '$date_safe'"; 
     }
 
-        $results = $conn->query($query);
-    ?>
+    $results = $conn->query($query);
+?>
+
+<?php if (isset($results) && $results !== null): ?>
     <div class="table-card" style="margin-top: 30px;">
         <table class="isj-table">
             <thead>
@@ -305,6 +333,7 @@ function get_deep_folder_count($conn, $folder_id, $user_role) {
             </tbody>
         </table>
     </div>
+    <?php endif; ?>
     <?php endif; ?>
 </div>
 
@@ -339,11 +368,16 @@ function validateSearch() {
     </form>
     </div>
 
-    <?php if (isset($_POST['run_content_search'])): 
-        $keyword = $conn->real_escape_string($_POST['content_keyword']);
-        $sql = "SELECT * FROM documents WHERE type = 'file' AND file_content LIKE '%$keyword%'";
-        $results = $conn->query($sql);
-    ?>
+    <?php 
+// 1. First Check: Only run if the button was clicked AND we are on the 'content' tab
+if (isset($_POST['run_content_search']) && isset($_POST['tab']) && $_POST['tab'] == 'content'): 
+    
+    $keyword = $conn->real_escape_string($_POST['content_keyword']);
+    $sql = "SELECT * FROM documents WHERE type = 'file' AND file_content LIKE '%$keyword%'";
+    $results = $conn->query($sql);
+?>
+
+    <?php if (isset($results)): ?>
         <div class="table-card" style="margin-top: 30px; background: white; border-radius: 10px; overflow: hidden;">
             <table class="isj-table" style="width: 100%; border-collapse: collapse;">
                 <thead style="background: #061428; color: white;">
@@ -358,12 +392,12 @@ function validateSearch() {
                     <?php if ($results && $results->num_rows > 0): ?>
                         <?php while($row = $results->fetch_assoc()): ?>
                             <tr style="border-bottom: 1px solid #eee;">
-                                <td style="padding: 15px;"><i class="fas fa-file-alt"></i> <?php echo $row['name']; ?></td>
-                                <td style="padding: 15px;"><?php echo $row['author']; ?></td>
+                                <td style="padding: 15px;"><i class="fas fa-file-alt"></i> <?php echo htmlspecialchars($row['name']); ?></td>
+                                <td style="padding: 15px;"><?php echo htmlspecialchars($row['author'] ?? 'Admin'); ?></td>
                                 <td style="padding: 15px;"><?php echo date('d/m/Y', strtotime($row['created_at'])); ?></td>
                                 <td style="padding: 15px;">
-                                    <a href="../<?php echo $row['file_path']; ?>" target="_blank" style="margin-right: 10px; color: #061428;"><i class="fas fa-eye"></i></a>
-                                    <a href="../<?php echo $row['file_path']; ?>" download style="color: green;"><i class="fas fa-download"></i></a>
+                                    <a href="../<?php echo htmlspecialchars($row['file_path']); ?>" target="_blank" style="margin-right: 10px; color: #061428;"><i class="fas fa-eye"></i></a>
+                                    <a href="../<?php echo htmlspecialchars($row['file_path']); ?>" download style="color: green;"><i class="fas fa-download"></i></a>
                                 </td>
                             </tr>
                         <?php endwhile; ?>
@@ -374,6 +408,7 @@ function validateSearch() {
             </table>
         </div>
     <?php endif; ?>
+<?php endif; ?>
 </div>
         <div id="dashboard-default-content">
     <?php 
@@ -517,6 +552,11 @@ function validateSearch() {
 </div>
 
 <script>
+
+// If the page is reloaded (refreshed), clear the URL and go home
+    if (performance.navigation.type === performance.navigation.TYPE_RELOAD) {
+        window.location.href = "userdashboard.php"; 
+    }
 // 1. Keep your validation function here
 function validateSearch() {
     const inputs = document.querySelectorAll('.search-input');
@@ -683,6 +723,25 @@ allFilesBtn.addEventListener('click', (e) => {
         });
     }
 });
+document.addEventListener("DOMContentLoaded", function() {
+        // 1. Get the tab from the URL (for GET/Advanced Search)
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabParam = urlParams.get('tab');
+
+        // 2. Get the tab from PHP POST state (for Content Search)
+        const isPostSearch = "<?php echo isset($_POST['run_content_search']) ? 'content' : ''; ?>";
+        const isGetSearch = "<?php echo isset($_GET['perform_search']) ? 'advanced' : ''; ?>";
+
+        // Logic to force the correct tab open
+        if (tabParam === 'content' || isPostSearch === 'content') {
+            const contentBtn = document.getElementById('btn-content-search');
+            if (contentBtn) contentBtn.click();
+        } 
+        else if (tabParam === 'advanced' || isGetSearch === 'advanced') {
+            const advancedBtn = document.getElementById('btn-advanced-search');
+            if (advancedBtn) advancedBtn.click();
+        }
+    });
 </script>
 </body>
 </html>

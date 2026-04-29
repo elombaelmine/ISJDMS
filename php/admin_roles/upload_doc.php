@@ -236,7 +236,9 @@ function read_docx($filename) {
         </div>
 
         <button type="submit" class="btn-upload">Start Upload & Search-Indexing</button>
-        <a href="javascript:history.back()" style="display: block; text-align: center; margin-top: 15px; color: #666; text-decoration: none;">Back</a>
+        <a href="../userdashboard.php" style="display: block; text-align: center; margin-top: 15px; color: #666; text-decoration: none;">
+    <i class="fas fa-arrow-left"></i> Back to Dashboard
+</a>
     </form>
 </div>
 
