@@ -1,4 +1,17 @@
 <?php
+
+// 1. FIRST: Connect to the database
+include("database.php");
+
+// Fetch unique folders from the database for the category dropdown
+$folder_query = "SELECT DISTINCT name FROM documents WHERE type = 'folder'";
+// Update this line at the top of your script
+$folders_result = $conn->query("SELECT id, name FROM documents WHERE type = 'folder'");
+
+// Fetch unique roles for the user filter
+$role_query = "SELECT DISTINCT role FROM registration";
+$roles_result = $conn->query($role_query);
+
 // Get all currently "open" folders from the URL (e.g., ?open=1,5,12)
 $open_folders = isset($_GET['open']) ? explode(',', $_GET['open']) : [];
 
@@ -137,40 +150,245 @@ $docs_result = $conn->query($docs_query);
 
         <div class="main-layout">
             <header class="admin-header">
-                <div class="header-search"><input type="text" placeholder="Search system..."></div>
+                <!-- <div class="header-search"><input type="text" placeholder="Search system..."></div> -->
                 <div class="admin-profile">
                     <span class="role-badge">ADMIN</span>
                     <div class="avatar">AD</div>
                 </div>
             </header>
 
-            <main class="content-body">
-    <?php if(!isset($_GET['tab']) || $_GET['tab'] == 'home'): ?>
-    <h2 class="section-title">Dashboard Overview</h2>
-    <div class="stats-grid">
+<main class="content-body">
+<?php if(!isset($_GET['tab']) || $_GET['tab'] == 'home'): ?>
+    <h2 class="section-title">Global Search & Filters</h2>
+
+    <!-- 1. Stats Grid (2 Cards) -->
+    <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
         <div class="stat-card">
             <div class="stat-info">
                 <h3><?php echo $userCount; ?></h3>
-                <p>Total Users</p>
+                <p>Total Registered Users</p>
             </div>
-            <i class="fas fa-user-friends"></i>
+            <i class="fas fa-user-shield"></i>
         </div>
-        <div class="stat-card">
-     <div class="stat-info">
-        <h3><?php echo $totalFiles; ?></h3>
-        <p>Total Documents</p>
-         </div>
-        <i class="fas fa-file-alt"></i>
-      </div>
         <div class="stat-card">
             <div class="stat-info">
-                <h3><?php echo $pendingReview; ?></h3>
-                <p>Pending Review</p>
+                <h3><?php echo $totalFiles; ?></h3>
+                <p>Total Indexed Documents</p>
             </div>
-            <i class="fas fa-hourglass-half"></i>
+            <i class="fas fa-database"></i>
         </div>
     </div>
-    <?php endif; ?>
+
+    <!-- 2. The Filter Hub -->
+    <div class="filter-container" style="background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+            
+            <!-- DOCUMENT SEARCH SECTION -->
+            <div class="filter-column" style="border-right: 1px solid #eee; padding-right: 20px;">
+                <h4 style="margin-bottom: 15px;"><i class="fas fa-file-search"></i> Search Documents</h4>
+                <form action="admindashboard.php" method="GET">
+                    <input type="hidden" name="tab" value="home">
+                    <input type="hidden" name="search_type" value="docs">
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                        <input type="text" name="doc_name" placeholder="File Name/Title" value="" style="padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
+                        <input type="text" name="doc_author" placeholder="Author Name" value="" style="padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
+                        <input type="date" name="doc_date" value="" style="padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
+                        <input type="text" name="doc_keyword" placeholder="Keyword" value="" style="padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
+                    </div>
+
+                   <select name="folder_filter" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd; margin-bottom: 10px;">
+    <option value="all">All Folders (Categories)</option>
+    <?php 
+    if($folders_result) {
+        $folders_result->data_seek(0); 
+        while($row = $folders_result->fetch_assoc()): ?>
+            <option value="<?php echo $row['id']; ?>" <?php echo (isset($_GET['folder_filter']) && $_GET['folder_filter'] == $row['id']) ? 'selected' : ''; ?>>
+                <?php echo htmlspecialchars($row['name']); ?>
+            </option>
+        <?php endwhile; 
+    } ?>
+</select>
+
+                    <button type="submit" style="width: 100%; background: #061428; color: white; padding: 12px; border: none; border-radius: 5px; cursor: pointer;">Filter Docs</button>
+                </form>
+            </div>
+
+            <!-- USER SEARCH SECTION -->
+            <div class="filter-column">
+                <h4 style="margin-bottom: 15px;"><i class="fas fa-users-cog"></i> Search Users</h4>
+                <form action="admindashboard.php" method="GET">
+                    <input type="hidden" name="tab" value="home">
+                    <input type="hidden" name="search_type" value="users">
+
+                    <select name="role_filter" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd; margin-bottom: 10px;">
+                        <option value="all">All Roles</option>
+                        <option value="staff" <?php echo (isset($_GET['role_filter']) && $_GET['role_filter'] == 'staff') ? 'selected' : ''; ?>>Staff</option>
+                        <option value="teacher" <?php echo (isset($_GET['role_filter']) && $_GET['role_filter'] == 'teacher') ? 'selected' : ''; ?>>Teacher</option>
+                        <option value="parent" <?php echo (isset($_GET['role_filter']) && $_GET['role_filter'] == 'parent') ? 'selected' : ''; ?>>Parent</option>
+                        <option value="student" <?php echo (isset($_GET['role_filter']) && $_GET['role_filter'] == 'student') ? 'selected' : ''; ?>>Student</option>
+                    </select>
+
+                    <select name="status_filter" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd; margin-bottom: 53px;">
+                        <option value="all">All Status</option>
+                        <option value="enabled" <?php echo (isset($_GET['status_filter']) && $_GET['status_filter'] == 'enabled') ? 'selected' : ''; ?>>Enabled</option>
+                        <option value="disabled" <?php echo (isset($_GET['status_filter']) && $_GET['status_filter'] == 'disabled') ? 'selected' : ''; ?>>Disabled</option>
+                    </select>
+
+                    <button type="submit" style="width: 100%; background: #cca43b; color: #061428; font-weight: bold; padding: 12px; border: none; border-radius: 5px; cursor: pointer;">Filter Users</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Dynamic Results Table -->
+    <div class="results-area" style="margin-top: 30px;">
+        
+  <?php if(isset($_GET['search_type']) && $_GET['search_type'] == 'docs'): 
+    // 1. Secure and capture inputs
+    $name = $conn->real_escape_string($_GET['doc_name'] ?? '');
+    $author = $conn->real_escape_string($_GET['doc_author'] ?? '');
+    $date = $conn->real_escape_string($_GET['doc_date'] ?? '');
+    $keyword = $conn->real_escape_string($_GET['doc_keyword'] ?? '');
+    $folder_id = $conn->real_escape_string($_GET['folder_filter'] ?? 'all');
+
+    // 2. Base Query: Use 'file' singular to match your enum definition
+   // Use 'file' singular to match your enum
+$sql = "SELECT * FROM documents WHERE type = 'file'";
+
+if($folder_id != 'all' && !empty($folder_id)) {
+    // We use parent_id because it links files to folders
+    $sql .= " AND (parent_id = '$folder_id' 
+            OR parent_id IN (SELECT id FROM documents WHERE parent_id = '$folder_id' AND type = 'folder'))";
+}
+
+    // 4. Text & Metadata Filters
+    if(!empty($name))    $sql .= " AND name LIKE '%$name%'";
+    if(!empty($author))  $sql .= " AND author LIKE '%$author%'";
+    if(!empty($date))    $sql .= " AND DATE(created_at) = '$date'";
+    if(!empty($keyword)) $sql .= " AND (name LIKE '%$keyword%' OR description LIKE '%$keyword%')";
+
+    $sql .= " ORDER BY created_at DESC";
+    
+    // Optional: Uncomment the line below if you still get no results to see the query being run
+    // echo "<!-- Debug SQL: " . $sql . " -->";
+
+    $res = $conn->query($sql);
+?>
+    <div class="table-card" style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="margin: 0;">File Search Results</h3>
+            <span style="font-size: 0.9em; color: #666;"><?php echo $res ? $res->num_rows : 0; ?> items found</span>
+        </div>
+        
+        <table class="isj-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="text-align: left; border-bottom: 2px solid #eee;">
+                    <th style="padding: 12px;">File Name</th>
+                    <th>Date</th>
+                    <th>Author</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if($res && $res->num_rows > 0): while($file = $res->fetch_assoc()): ?>
+                    <tr style="border-bottom: 1px solid #f5f5f5;">
+                        <td style="padding: 12px;">
+                            <strong><?php echo htmlspecialchars($file['name']); ?></strong>
+                            <?php if(!empty($file['description'])): ?>
+                                <br><small style="color: #888;"><?php echo htmlspecialchars($file['description']); ?></small>
+                            <?php endif; ?>
+                        </td>
+                        <td><?php echo date('d/m/Y', strtotime($file['created_at'])); ?></td>
+                        <td><?php echo htmlspecialchars($file['author']); ?></td>
+                        <td>
+                            <div style="display: flex; gap: 10px;">
+                               <a href="../<?php echo htmlspecialchars($file['file_path']); ?>" target="_blank" class="btn-icon"><i class="fas fa-eye"></i></a>
+                                <a href="../<?php echo htmlspecialchars($file['file_path']); ?>" download class="btn-icon" style="color: green;"><i class="fas fa-download"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                <?php endwhile; else: ?>
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 40px; color: #888;">
+                            <i class="fas fa-folder-open" style="font-size: 2em; display: block; margin-bottom: 10px; opacity: 0.3;"></i>
+                            No files found matching your search.
+                        </td>
+                    </tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+
+        <?php elseif(isset($_GET['search_type']) && $_GET['search_type'] == 'users'): 
+    // FETCH USERS LOGIC (registration table)
+    $role = $conn->real_escape_string($_GET['role_filter'] ?? 'all');
+    $status = $conn->real_escape_string($_GET['status_filter'] ?? 'all');
+    
+    // Base Query: 1=1 is a trick to make adding 'AND' conditions easier
+    $sql = "SELECT * FROM registration WHERE 1=1";
+    
+    // MODIFICATION: Exclude admin from results
+    $sql .= " AND role != 'admin'";
+
+    if($role != 'all') {
+        $sql .= " AND role = '$role'";
+    }
+    
+    if($status != 'all') {
+        $sql .= " AND status = '$status'";
+    }
+    
+    $sql .= " ORDER BY created_at DESC";
+    $res = $conn->query($sql);
+?>
+    <div class="table-card" style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        <h3>User Search Results</h3>
+        <table class="isj-table" style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+            <thead>
+                <tr style="text-align: left; border-bottom: 2px solid #eee;">
+                    <th style="padding: 12px;">Full Name</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if($res && $res->num_rows > 0): while($user = $res->fetch_assoc()): ?>
+                    <tr style="border-bottom: 1px solid #f5f5f5;">
+                        <td style="padding: 12px;"><?php echo htmlspecialchars($user['fullname']); ?></td>
+                        <td><span class="role-badge"><?php echo ucfirst($user['role']); ?></span></td>
+                        <td><?php echo ucfirst($user['status']); ?></td>
+                        <td>
+                            <a href="admin_roles/edit_user.php?id=<?php echo $user['id']; ?>" class="btn-icon">
+                                <i class="fas fa-edit" style="color: #061428; margin-right: 10px;"></i>
+                            </a>
+
+                            <a href="admin_roles/toggle_status.php?id=<?php echo $user['id']; ?>" class="btn-icon">
+                                <?php if(strtolower($user['status']) == 'enabled'): ?>
+                                    <i class="fas fa-ban" style="color: #e74c3c;" title="Disable"></i>
+                                <?php else: ?>
+                                    <i class="fas fa-check-square" style="color: #2ecc71;" title="Enable"></i>
+                                <?php endif; ?>
+                            </a>
+                        </td>
+                    </tr>
+                <?php endwhile; else: ?>
+                    <tr><td colspan="4" style="text-align: center; padding: 30px; color: #888;">No users found with those filters.</td></tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+
+<?php else: ?>
+    <!-- This handles the state where no search has been performed yet -->
+    <div style="text-align: center; padding: 40px; color: #bbb; border: 2px dashed #eee; border-radius: 15px;">
+        <i class="fas fa-filter" style="font-size: 2em; margin-bottom: 10px;"></i>
+        <p>Use the filters above to browse specific documents or users.</p>
+    </div>
+<?php endif; ?>
+    </div>
+<?php endif; ?>
 
     <?php if(isset($_GET['tab']) && $_GET['tab'] == 'users'): ?>
 <section id="tab-users" class="admin-tab">
@@ -346,5 +564,11 @@ $docs_result = $conn->query($docs_query);
 </main>
         </div>
     </div>
+<script>
+    // If the page is reloaded (refreshed), clear the URL and go home
+    if (performance.navigation.type === performance.navigation.TYPE_RELOAD) {
+        window.location.href = "admindashboard.php"; 
+    }
+</script>
 </body>
 </html>
