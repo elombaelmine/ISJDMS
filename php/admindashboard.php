@@ -14,6 +14,10 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
         $conn->query("UPDATE registration SET status = IF(status='enabled', 'disabled', 'enabled') WHERE id = $id");
     }
 
+    if ($_GET['action'] === 'delete_item') {
+    $conn->query("DELETE FROM documents WHERE id = $id");
+    
+}
     // // Handle the Edit (If you just want to redirect to a specific edit page for now)
     // Inside your action handler block in admindashboard.php
     if ($_GET['action'] === 'edit_user') {
@@ -604,6 +608,7 @@ $docs_result = $conn->query($docs_query);
     // If the page is reloaded (refreshed), clear the URL and go home
     if (performance.navigation.type === performance.navigation.TYPE_RELOAD) {
         window.location.href = "admindashboard.php"; }
+
 </script>
 </body>
 </html>
