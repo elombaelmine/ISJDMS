@@ -105,21 +105,16 @@ function get_deep_folder_count($conn, $folder_id, $user_role) {
                         onclick="window.location.href='admin_roles/upload_doc.php'">
                         <i class="fas <?php echo $can_upload ? 'fa-plus' : 'fa-lock'; ?>"></i> New Upload
                     </button>
-
                 <nav class="sidebar-nav">
                     <p class="nav-label">DOCUMENTATION</p>
                     <a href="#" class="nav-item active" id="btn-all-files">
-                        <i class="fas fa-th-large"></i> All Files
-                    </a>
+                        <i class="fas fa-th-large"></i> All Files</a>
                     <a href="#" class="nav-item" id="btn-nouveautes">
-                        <i class="fas fa-bolt"></i> Recent Docs <span class="badge-new">New</span>
-                    </a>
+                        <i class="fas fa-bolt"></i> Recent Docs <span class="badge-new">New</span></a>
                     <a href="#" class="nav-item" id="btn-advanced-search">
-                        <i class="fas fa-graduation-cap"></i> Advanced search
-                    </a>
+                        <i class="fas fa-graduation-cap"></i> Advanced search</a>
                     <a href="javascript:void(0)" id="btn-content-search" class="nav-item">
-                            <i class="fas fa-search-plus" style="color: #D4AF37;"></i>Search Within Files
-                        </a>
+                            <i class="fas fa-search-plus" style="color: #D4AF37;"></i>Search Within Files </a>
                     <a href="#" class="nav-item" id="btn-plan"><i class="fas fa-book-reader"></i> Plan</a>
                 </nav>
 
@@ -130,15 +125,6 @@ function get_deep_folder_count($conn, $folder_id, $user_role) {
             </aside>
 
             <main class="main-content">
-        
-                    <!-- success message again -->
-                    <?php if (isset($_GET['status']) && $_GET['status'] === 'updated'): ?>
-                        <div style="background: #000; color: #fff; padding: 12px 20px; border-radius: 8px; margin-bottom: 25px; border-left: 5px solid #D4AF37; display: flex; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                            <i class="fas fa-check-circle" style="margin-right: 12px; color: #D4AF37;"></i>
-                            <span style="font-weight: 500; font-size: 0.95rem;">Your account settings have been successfully updated.</span>
-                        </div>
-                    <?php endif; ?>
-
                     <!-- search bar header -->
                     <header class="header-top">
                             <!-- 1. Explicitly point to userdashboard.php -->
@@ -158,9 +144,16 @@ function get_deep_folder_count($conn, $folder_id, $user_role) {
                                     <span class="user-name"><?php echo htmlspecialchars(ucfirst($displayName)); ?></span>
                                     <div class="user-avatar" style="text-transform: uppercase;"><?php echo htmlspecialchars($initial); ?></div>
                                 </div>
-                        </header>
+                    </header>
 
-                        <!-- success message -->
+                        <!-- success message again -->
+                        <?php if (isset($_GET['status']) && $_GET['status'] === 'updated'): ?>
+                            <div style="background: #000; color: #fff; padding: 12px 20px; border-radius: 8px; margin-bottom: 25px; border-left: 5px solid #D4AF37; display: flex; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                                <i class="fas fa-check-circle" style="margin-right: 12px; color: #D4AF37;"></i>
+                                <span style="font-weight: 500; font-size: 0.95rem;">Your account settings have been successfully updated.</span>
+                            </div>
+                        <?php endif; ?>
+                       <!-- success message -->
                         <?php if(isset($_GET['status']) && $_GET['status'] == 'success'): ?>
                             <div class="alert-box" 
                                 style="padding: 15px; margin-bottom: 20px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; 
@@ -174,7 +167,101 @@ function get_deep_folder_count($conn, $folder_id, $user_role) {
                                 <button onclick="this.parentElement.style.display='none' "style="background:none; border:none; color:inherit; cursor:pointer; font-size: 1.2rem; font-weight:bold;">&times;</button>
                             </div>
                         <?php endif; ?>
+                    
+                        <!-- simple search function -->
+                        <div id="dashboard-default-content" style="display: <?php echo (!isset($_GET['tab']) || $_GET['tab'] === 'all_files') ? 'block' : 'none'; ?>;">
+                                        <?php 
+                                            /**
+                                             * Logic Fix: 
+                                             * 1. If 'simple_search' is in the URL, show the search results.
+                                             * 2. We removed the dependency on 'perform_search' to stop the Advanced Search from hijacking this view.
+                                             */
+                                            $is_search_active = isset($_GET['simple_search']) && !empty(trim($_GET['simple_search']));
+                                            
+                                         if ($is_search_active): 
+                                                $s = $conn->real_escape_string(trim($_GET['simple_search']));
+                                                
+                                                // Query filters for files and respects the user's specific role
+                                                $search_query = "SELECT * FROM documents 
+                                                                WHERE type = 'file' 
+                                                                AND (FIND_IN_SET('$user_role', viewed_by) OR viewed_by = 'all')
+                                                                AND (name LIKE '%$s%' OR author LIKE '%$s%' OR description LIKE '%$s%')
+                                                                ORDER BY created_at DESC";
+                                                $search_results = $conn->query($search_query);
+                                            ?>
+                                    <!-- Search Results View -->
+                                    <div class="section-title">
+                                        <h2>Search Results for: "<?php echo htmlspecialchars($s); ?>"</h2>
+                                        <!-- Clicking All Files or Clear Search resets the view -->
+                                        <a href="userdashboard.php" style="font-size: 0.8rem; color: #D4AF37;">Back to All Files</a>
+                                    </div>
+                    
+                                    <div class="table-card">
+                                        <table class="isj-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Title</th>
+                                                        <th>Author</th>
+                                                        <th>Date</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                        <?php if ($search_results && $search_results->num_rows > 0): ?>
+                                                            <?php while($file = $search_results->fetch_assoc()): ?>
+                                                                <tr>
+                                                                    <td><i class="fas fa-file-pdf pdf-red"></i> <?php echo htmlspecialchars($file['name']); ?></td>
+                                                                    <td><?php echo htmlspecialchars($file['author'] ?? 'Admin'); ?></td>
+                                                                    <td><?php echo date('d M Y', strtotime($file['created_at'])); ?></td>
+                                                                    <td class="action-buttons">
+                                                                        <a href="../<?php echo htmlspecialchars($file['file_path']); ?>" target="_blank" class="btn-icon"><i class="fas fa-eye"></i></a>
+                                                                        <a href="../<?php echo htmlspecialchars($file['file_path']); ?>" download class="btn-icon" style="color: green;"><i class="fas fa-download"></i></a>
+                                                                    </td>
+                                                                </tr>
+                                                            <?php endwhile; ?>
+                                                        <?php else: ?>
+                                                            <tr><td colspan="4" style="text-align: center; padding: 30px; color: #888;">No files found matching your search.</td></tr>
+                                                        <?php endif; ?>
+                                                </tbody>
+                                        </table>
+                                    </div>
 
+                                   <?php else: ?>
+                                        <!-- Default Folder Grid View (Shown when btn-all-files is active) -->
+                                        <div class="folder-grid" style="display: flex; flex-wrap: wrap; gap: 20px; padding: 10px;">
+                                        <?php
+                                            // Standard query for top-level folders
+                                            $sql = "SELECT * FROM documents WHERE type = 'folder' AND parent_id IS NULL AND (FIND_IN_SET('$user_role', viewed_by) OR viewed_by = 'all') ORDER BY name ASC";
+                                            $result = $conn->query($sql);
+
+                                        while($row = $result->fetch_assoc()) {
+                                                $folder_id = $row['id'];
+                                                $total_folders = get_deep_folder_count($conn, $folder_id, $user_role);
+                                                $total_files = get_deep_file_count($conn, $folder_id, $user_role);
+                                                
+                                                $icon = (stripos($row['name'], 'Governance') !== false) ? "fa-university" : "fa-folder"; 
+                                        ?>
+                                            <div class="folder-card-new" onclick="window.location.href='view_folder.php?id=<?php echo $folder_id; ?>'" 
+                                                style="background: #ffffff; border-radius: 12px; padding: 25px; display: flex; align-items: center; gap: 20px; border-left: 6px solid #D4AF37; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer; width: 350px; min-height: 100px; transition: 0.3s;">
+                                                
+                                                <div style="font-size: 2.2rem; color: #061428;">
+                                                    <i class="fas <?php echo $icon; ?>"></i>
+                                                </div>
+
+                                                <div class="folder-info">
+                                                    <h4 style="margin: 0; font-size: 1.15rem; color: #061428; font-weight: 700; font-family: sans-serif;">
+                                                        <?php echo htmlspecialchars($row['name']); ?>
+                                                    </h4>
+                                                    <p style="margin: 6px 0 0; color: #555; font-size: 0.85rem; font-family: sans-serif;">
+                                                        <span style="font-weight: 600;"><?php echo $total_folders; ?></span> Folders • 
+                                                        <span style="font-weight: 600;"><?php echo $total_files; ?></span> Total Files
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        <?php } ?>
+                                </div>
+                           <?php endif; ?>
+                        </div>
                         <!-- Recent Docs section -->
                         <div id="nouveautes-section" style="display: none;">
                                         <div class="section-title">
@@ -224,9 +311,8 @@ function get_deep_folder_count($conn, $folder_id, $user_role) {
                             </table>
                             </div>
                         </div>
-
                         <!-- Advance search -->
-                        <div id="advanced-search-section" style="display: none;">
+                        <div id="advanced-search-section" style="display: <?php echo (isset($_GET['tab']) && $_GET['tab'] === 'advanced') ? 'block' : 'none'; ?>;">
                             <div class="search-grid-form">
                                                 <div class="section-title">
                                                     <h2><i class="fas fa-search-plus" style="color: var(--gold);"></i> Advanced Search</h2>
@@ -365,8 +451,6 @@ function get_deep_folder_count($conn, $folder_id, $user_role) {
                                     <?php endif; ?>
                             <?php endif; ?>
                         </div>
-
-                                <!-- <script>// Simple validation to ensure JS also checks for empty fields before submissionfunction validateSearch() {const inputs = document.querySelectorAll('#searchForm .search-input');   for (let input of inputs) {if (input.value.trim() === "") {alert("Please fill in all fields for a precise search.");return false;}}return true;}</script> -->
                         <!-- content search -->
                         <div id="content-search-section" style="display: none; padding: 20px;">
                                         <div class="search-container-heavy" style="background: #fff; padding: 40px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; border-top: 4px solid #D4AF37;">
@@ -422,100 +506,7 @@ function get_deep_folder_count($conn, $folder_id, $user_role) {
                                                 <?php endif; ?>
                                         <?php endif; ?>
                         </div>
-                        <!-- simple search function -->
-                        <div id="dashboard-default-content">
-                                    <!-- ?php // Check if a simple search was performed from the header$is_simple_search = isset($_GET['perform_search']) && !empty($_GET['simple_search']);if ($is_simple_search):    $s = $conn->real_escape_string(trim($_GET['simple_search']));$search_query = "SELECT * FROM documents WHERE type = 'file' AND (FIND_IN_SET('$user_role', viewed_by) OR viewed_by = 'all')AND (name LIKE '%$s%' OR author LIKE '%$s%' OR description LIKE '%$s%')ORDER BY created_at DESC";$search_results = $conn->query($search_query);?> -->
-                                        <?php 
-                                            // We check for perform_search AND simple_search to differentiate from Advanced Search
-                                            $is_simple_search = isset($_GET['perform_search']) && !empty($_GET['simple_search']);
-                                            
-                                            if ($is_simple_search): 
-                                                $s = $conn->real_escape_string(trim($_GET['simple_search']));
-                                                
-                                                // This query is now "coherent" because it checks permissions and keywords across all text fields
-                                                $search_query = "SELECT * FROM documents 
-                                                                WHERE type = 'file' 
-                                                                AND (FIND_IN_SET('$user_role', viewed_by) OR viewed_by = 'all')
-                                                                AND (name LIKE '%$s%' OR author LIKE '%$s%' OR description LIKE '%$s%')
-                                                                ORDER BY created_at DESC";
-                                                $search_results = $conn->query($search_query);
-                                        ?>
-                                            <div class="section-title">
-                                                <h2>Search Results for: "<?php echo htmlspecialchars($s); ?>"</h2>
-                                                <a href="userdashboard.php" style="font-size: 0.8rem; color: #D4AF37;">Clear Search</a>
-                                            </div>
-                                            
-                                            <div class="table-card">
-                                                <table class="isj-table">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Title</th>
-                                                            <th>Author</th>
-                                                            <th>Date</th>
-                                                            <th>Actions</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <?php if ($search_results && $search_results->num_rows > 0): ?>
-                                                            <?php while($file = $search_results->fetch_assoc()): ?>
-                                                                <tr>
-                                                                    <td><i class="fas fa-file-pdf pdf-red"></i> <?php echo htmlspecialchars($file['name']); ?></td>
-                                                                    <td><?php echo htmlspecialchars($file['author'] ?? 'Admin'); ?></td>
-                                                                    <td><?php echo date('d M Y', strtotime($file['created_at'])); ?></td>
-                                                                    <td class="action-buttons">
-                                                                        <a href="../<?php echo htmlspecialchars($file['file_path']); ?>" target="_blank" class="btn-icon"><i class="fas fa-eye"></i></a>
-                                                                        <a href="../<?php echo htmlspecialchars($file['file_path']); ?>" download class="btn-icon" style="color: green;"><i class="fas fa-download"></i></a>
-                                                                    </td>
-                                                                </tr>
-                                                            <?php endwhile; ?>
-                                                        <?php else: ?>
-                                                            <tr><td colspan="4" style="text-align: center; padding: 30px; color: #888;">No files found matching your search.</td></tr>
-                                                        <?php endif; ?>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                    
-                                        <?php else: ?>
-                                <div class="folder-grid" style="display: flex; flex-wrap: wrap; gap: 20px; padding: 10px;">
-                                        <?php
-                                                $sql = "SELECT * FROM documents WHERE type = 'folder' AND parent_id IS NULL AND (FIND_IN_SET('$user_role', viewed_by) OR viewed_by = 'all') ORDER BY name ASC";
-                                                $result = $conn->query($sql);
-
-                                                while($row = $result->fetch_assoc()) {
-                                                    $folder_id = $row['id'];
-                                            
-                                                    // Use your working recursive function
-                                                    // Get separate counts for folders and files
-                                                    $total_folders = get_deep_folder_count($conn, $folder_id, $user_role);
-                                                    $total_files = get_deep_file_count($conn, $folder_id, $user_role);
-                                                    
-                                                    // Count just the immediate sub-folders
-                                                    $sub_q = "SELECT COUNT(*) as c FROM documents WHERE parent_id = $folder_id AND type = 'folder'";
-                                                    $sub_count = $conn->query($sub_q)->fetch_assoc()['c'];
-                                                    
-                                                    $icon = (stripos($row['name'], 'Governance') !== false) ? "fa-university" : "fa-folder"; 
-                                        ?>
-                                                    <div class="folder-card-new"  onclick="window.location.href='view_folder.php?id=<?php echo $folder_id; ?>'" style="background: #ffffff; border-radius: 12px; padding: 25px; display: flex; align-items: center; gap: 20px; border-left: 6px solid #D4AF37; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer; width: 350px; min-height: 100px; transition: 0.3s;">
-                                                        
-                                                                <div style="font-size: 2.2rem; color: #061428;">
-                                                                    <i class="fas <?php echo $icon; ?>"></i>
-                                                                </div>
-                                                        
-                                                                <div class="folder-info">
-                                                                            <h4 style="margin: 0; font-size: 1.15rem; color: #061428; font-weight: 700; font-family: sans-serif;">
-                                                                                <?php echo htmlspecialchars($row['name']); ?>
-                                                                            </h4>
-                                                                            <p style="margin: 6px 0 0; color: #555; font-size: 0.85rem; font-family: sans-serif;">
-                                                                                <span style="font-weight: 600;"><?php echo $total_folders; ?></span> Folders • 
-                                                                                <span style="font-weight: 600;"><?php echo $total_files; ?></span> Total Files
-                                                                            </p>
-                                                                </div>
-                                                    </div>
-                                                <?php } ?>
-                            </div>
-                            <?php endif; ?>
-                        </div>
-                        <!-- plan section -->
+                         <!-- plan section -->
                         <div id="plan-section" style="display: none;">
                             <div class="section-title">
                                 <h2><i class="fas fa-book-reader" style="color: var(--gold);"></i> Organizational Plan</h2>
@@ -560,7 +551,6 @@ function get_deep_folder_count($conn, $folder_id, $user_role) {
                                 renderRoleTree($conn, $user_role);?>
                             </div>
                         </div>
-                
             </main>
 </div>
 
@@ -607,173 +597,117 @@ function toggleSection(sectionId) {
     }
 }
 
-// 2. Place the new logic here
 document.addEventListener('DOMContentLoaded', function() {
-    // Selectors
+    // --- 1. SELECTORS ---
     const nouveautesBtn = document.getElementById('btn-nouveautes');
     const allFilesBtn = document.getElementById('btn-all-files');
     const searchBtn = document.getElementById('btn-advanced-search');
     const planBtn = document.getElementById('btn-plan');
+    const contentSearchBtn = document.getElementById('btn-content-search');
 
     const nouveautesSection = document.getElementById('nouveautes-section');
     const defaultContent = document.getElementById('dashboard-default-content');
     const searchSection = document.getElementById('advanced-search-section');
     const planSection = document.getElementById('plan-section');
+    const contentSearchSection = document.getElementById('content-search-section');
     const topSearchBar = document.querySelector('.search-container');
 
-    const contentSearchBtn = document.getElementById('btn-content-search');
-    const contentSearchSection = document.getElementById('content-search-section');
-
+    // --- 2. DATA & PARAMETERS (CLEANED UP) ---
     const urlParams = new URLSearchParams(window.location.search);
-
-    // Check if the page just reloaded with Content Search results
-const resultsTable = document.querySelector('#content-search-section table');
-const isContentSearchActive = document.querySelector('input[name="run_content_search"]');
-
-if (resultsTable || isContentSearchActive) {
-    hideAllSections();
-    contentSearchSection.style.display = 'block';
-    
-    // Highlight the correct sidebar link
-    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-    if (contentSearchBtn) contentSearchBtn.classList.add('active');
-    
-    // Hide the top search bar to match your Advanced Search behavior
-    if (topSearchBar) topSearchBar.style.display = 'none';
-}
-
-    function hideAllSections() {
-    if(nouveautesSection) nouveautesSection.style.display = 'none';
-    if(defaultContent) defaultContent.style.display = 'none';
-    if(searchSection) searchSection.style.display = 'none';
-    if(planSection) planSection.style.display = 'none';
-    
-    // ADD THIS LINE
-    const contentSec = document.getElementById('content-search-section');
-    if(contentSec) contentSec.style.display = 'none';
-
-    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-    // If you add an 'active' class to the purple link, remove it here too
-}
-
-    // Initial Load Check for Search Results
-//  // Inside your DOMContentLoaded listener:
-// if (urlParams.has('perform_search')) {
-//     const isSimple = urlParams.has('simple_search') && urlParams.get('simple_search') !== "";
-    
-//     if (isSimple) {
-//         // Show All Files section for simple search results
-//         hideAllSections();
-//         defaultContent.style.display = 'block';
-//         allFilesBtn.classList.add('active');
-//         topSearchBar.style.display = 'flex';
-//     } else {
-//         // Show Advanced Search section for advanced filters
-//         hideAllSections();
-//         searchSection.style.display = 'block';
-//         searchBtn.classList.add('active');
-//         topSearchBar.style.display = 'none';
-//     }
-// }
-// Locate this block in your existing script and update it:
-if (urlParams.has('perform_search')) {
-    const isSimple = urlParams.has('simple_search') && urlParams.get('simple_search') !== "";
     const tabParam = urlParams.get('tab');
 
-    if (isSimple || tabParam === 'all_files') {
-        // FORCE 'All Files' for top search bar results
-        hideAllSections();
-        defaultContent.style.display = 'block';
-        allFilesBtn.classList.add('active');
-        topSearchBar.style.display = 'flex';
-    } else if (tabParam === 'advanced') {
-        // Show Advanced Search section for advanced filters
-        hideAllSections();
-        searchSection.style.display = 'block';
-        searchBtn.classList.add('active');
-        topSearchBar.style.display = 'none';
+    // Bridge PHP data to JavaScript
+    const postTab = "<?php echo (isset($_POST['tab'])) ? $_POST['tab'] : ''; ?>";
+    const isPostSearch = "<?php echo (isset($_POST['run_content_search'])) ? 'content' : ''; ?>";
+    const isGetSearch = urlParams.has('perform_search') ? 'advanced' : '';
+    
+    // Detect UI elements
+    const resultsTable = document.querySelector('#content-search-section table');
+    const isContentSearchActive = document.querySelector('input[name="run_content_search"]');
+
+    // --- 3. UTILITY FUNCTIONS ---
+    function hideAllSections() {
+        const sections = [nouveautesSection, defaultContent, searchSection, planSection, contentSearchSection];
+        sections.forEach(sec => { if(sec) sec.style.display = 'none'; });
+        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
     }
-}
 
-    // Event Listeners
-   // When clicking "Recent Docs"
-nouveautesBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    hideAllSections();
-    nouveautesSection.style.display = 'block';
-    
-    // This line removes the search bar
-    document.querySelector('.search-container').style.display = 'none'; 
-    
-    nouveautesBtn.classList.add('active');
-});
+    // --- 4. INITIAL LOAD LOGIC ---
+    hideAllSections(); 
 
-// When clicking "All Files"
-allFilesBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    hideAllSections();
-    defaultContent.style.display = 'block';
-    
-    // This line brings the search bar back
-    document.querySelector('.search-container').style.display = 'flex'; 
-    
-    allFilesBtn.classList.add('active');
-});
+    // PRIORITY 1: All Files (The Home State)
+    if (tabParam === 'all_files') {
+        if (defaultContent) defaultContent.style.display = 'block';
+        if (allFilesBtn) allFilesBtn.classList.add('active');
+        if (topSearchBar) topSearchBar.style.display = 'flex';
+    } 
+    // PRIORITY 2: Content Search
+    else if (tabParam === 'content' || isPostSearch === 'content' || postTab === 'content' || resultsTable || isContentSearchActive) {
+        if (contentSearchSection) contentSearchSection.style.display = 'block';
+        if (contentSearchBtn) contentSearchBtn.classList.add('active');
+        if (topSearchBar) topSearchBar.style.display = 'none';
+    }
+    // PRIORITY 3: Advanced Search
+    else if (tabParam === 'advanced' || isGetSearch === 'advanced') {
+        if (searchSection) searchSection.style.display = 'block';
+        if (searchBtn) searchBtn.classList.add('active');
+        if (topSearchBar) topSearchBar.style.display = 'none';
+    }
+    // DEFAULT: Fallback to Home
+    else {
+        if (defaultContent) defaultContent.style.display = 'block';
+        if (allFilesBtn) allFilesBtn.classList.add('active');
+        if (topSearchBar) topSearchBar.style.display = 'flex';
+    }
+    // --- 5. EVENT LISTENERS ---
 
     searchBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    hideAllSections();
-    searchSection.style.display = 'block';
-    
-    // TWEAK: Only hide the top bar if the user clicked "Advanced Search" 
-    // and hasn't already performed a simple search.
-    if (!urlParams.has('simple_search') || urlParams.get('simple_search') === "") {
-        topSearchBar.style.display = 'none';
-    }
-    
-    searchBtn.classList.add('active');
-});
+        e.preventDefault();
+        // If we are currently in "all_files" mode, redirect to clean page
+        if (urlParams.get('tab') === 'all_files') {
+            window.location.href = "userdashboard.php?tab=advanced";
+        } else {
+            hideAllSections();
+            if (searchSection) searchSection.style.display = 'block';
+            if (searchBtn) searchBtn.classList.add('active');
+            if (topSearchBar) topSearchBar.style.display = 'none';
+        }
+    });
+
+    allFilesBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        hideAllSections();
+        if (defaultContent) defaultContent.style.display = 'block';
+        if (topSearchBar) topSearchBar.style.display = 'flex';
+        if (allFilesBtn) allFilesBtn.classList.add('active');
+    });
+
+    nouveautesBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        hideAllSections();
+        if (nouveautesSection) nouveautesSection.style.display = 'block';
+        if (topSearchBar) topSearchBar.style.display = 'none';
+        if (nouveautesBtn) nouveautesBtn.classList.add('active');
+    });
 
     planBtn.addEventListener('click', (e) => {
         e.preventDefault();
         hideAllSections();
-        planSection.style.display = 'block';
-        topSearchBar.style.display = 'none';
-        planBtn.classList.add('active');
+        if (planSection) planSection.style.display = 'block';
+        if (topSearchBar) topSearchBar.style.display = 'none';
+        if (planBtn) planBtn.classList.add('active');
     });
 
     if (contentSearchBtn) {
         contentSearchBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            hideAllSections(); // This hides the other sections
-            contentSearchSection.style.display = 'block'; // Shows your new section
-            topSearchBar.style.display = 'none'; // Hides the header search bar
-            
-            // This ensures the link highlights like the others
-            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            hideAllSections();
+            if (contentSearchSection) contentSearchSection.style.display = 'block';
+            if (topSearchBar) topSearchBar.style.display = 'none';
             contentSearchBtn.classList.add('active');
         });
     }
 });
-document.addEventListener("DOMContentLoaded", function() {
-        // 1. Get the tab from the URL (for GET/Advanced Search)
-        const urlParams = new URLSearchParams(window.location.search);
-        const tabParam = urlParams.get('tab');
-
-        // 2. Get the tab from PHP POST state (for Content Search)
-        const isPostSearch = "<?php echo isset($_POST['run_content_search']) ? 'content' : ''; ?>";
-        const isGetSearch = "<?php echo isset($_GET['perform_search']) ? 'advanced' : ''; ?>";
-
-        // Logic to force the correct tab open
-        if (tabParam === 'content' || isPostSearch === 'content') {
-            const contentBtn = document.getElementById('btn-content-search');
-            if (contentBtn) contentBtn.click();
-        } 
-        else if (tabParam === 'advanced' || isGetSearch === 'advanced') {
-            const advancedBtn = document.getElementById('btn-advanced-search');
-            if (advancedBtn) advancedBtn.click();
-        }
-    });
 </script>
 </body>
 </html>
