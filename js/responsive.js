@@ -15,15 +15,17 @@
         const sidebar = document.querySelector(".sidebar");
         if (!sidebar) return;
 
+        const mobileShell = sidebar.closest(".admin-wrapper, .dashboard-wrapper") || document.body;
+
         const btn = document.createElement("button");
         btn.className = "hamburger-btn";
         btn.setAttribute("aria-label", "Open navigation menu");
         btn.innerHTML = '<i class="fas fa-bars"></i>';
-        document.body.appendChild(btn);
+        mobileShell.appendChild(btn);
 
         const overlay = document.createElement("div");
         overlay.className = "sidebar-overlay";
-        document.body.appendChild(overlay);
+        mobileShell.appendChild(overlay);
 
         /* -------------------------------------------
            2. Open / close logic

@@ -23,11 +23,10 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
     }
 
     if ($_GET['action'] === 'delete_item') {
-    $conn->query("DELETE FROM documents WHERE id = $id");
-    
-}
-    // // Handle the Edit (If you just want to redirect to a specific edit page for now)
-    // Inside your action handler block in admindashboard.php
+        $conn->query("DELETE FROM documents WHERE id = $id");
+    }
+
+    // Handle the Edit (If you just want to redirect to a specific edit page for now)
     if ($_GET['action'] === 'edit_user') {
         $id = (int)$_GET['id'];
         
@@ -51,10 +50,6 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
     header("Location: $url");
     exit();
 }
-// Fetch unique folders from the database for the category dropdown
-$folder_query = "SELECT DISTINCT name FROM documents WHERE type = 'folder'";
-// Update this line at the top of your script
-$folders_result = $conn->query("SELECT id, name FROM documents WHERE type = 'folder'");
 
 // Fetch unique roles for the user filter
 $role_query = "SELECT DISTINCT role FROM registration";
@@ -63,6 +58,32 @@ $roles_result = $conn->query($role_query);
 // Get all currently "open" folders from the URL (e.g., ?open=1,5,12)
 $open_folders = isset($_GET['open']) ? explode(',', $_GET['open']) : [];
 
+
+// =========================================================================
+// SAFE IN-MEMORY STRUCTURAL RECOVERY ENGINE (No Database Locking)
+// =========================================================================
+
+// 1. Grab all folder data at once into an isolated data array
+$all_folders_list = [];
+$folder_map_query = $conn->query("SELECT id, name, parent_id FROM documents WHERE type = 'folder'");
+if ($folder_map_query) {
+    while ($f_row = $folder_map_query->fetch_assoc()) {
+        $all_folders_list[] = $f_row;
+    }
+}
+function find_all_subfolder_ids_mem($folder_list, $target_parent_id) {
+    $collected_ids = [(int)$target_parent_id];
+    foreach ($folder_list as $folder) {
+        if ((int)$folder['parent_id'] === (int)$target_parent_id) {
+            $collected_ids = array_merge($collected_ids, find_all_subfolder_ids_mem($folder_list, $folder['id']));
+        }
+    }
+    return $collected_ids;
+}
+
+// =========================================================================
+// DIRECTORY TREE ACCORDION METHOD
+// =========================================================================
 function renderAccordionTree($conn, $parent_id = NULL, $open_folders = []) {
     $sql = ($parent_id === NULL) 
             ? "SELECT * FROM documents WHERE parent_id IS NULL AND type = 'folder' ORDER BY name ASC" 
@@ -70,7 +91,7 @@ function renderAccordionTree($conn, $parent_id = NULL, $open_folders = []) {
     
     $result = $conn->query($sql);
 
-    if ($result->num_rows > 0) {
+    if ($result && $result->num_rows > 0) {
         echo '<ul style="list-style: none; padding-left: 20px; border-left: 1px dashed #061428; margin-top: 5px;">';
         while ($row = $result->fetch_assoc()) {
             $id = $row['id'];
@@ -86,7 +107,7 @@ function renderAccordionTree($conn, $parent_id = NULL, $open_folders = []) {
 
             // INTELLIGENT CHECK: Does this folder have sub-folders?
             $check_sub = $conn->query("SELECT id FROM documents WHERE parent_id = $id AND type = 'folder' LIMIT 1");
-            $hasSubFolders = ($check_sub->num_rows > 0);
+            $hasSubFolders = ($check_sub && $check_sub->num_rows > 0);
 
             // Determine if clicking the name opens a page or expands the tree
             $name_link = $hasSubFolders ? $toggle_url : "admin_view_folder.php?id=" . $id;
@@ -113,7 +134,7 @@ function renderAccordionTree($conn, $parent_id = NULL, $open_folders = []) {
                 echo '</div>';
             echo '</div>';
 
-            // Only show sub-folders recursively; the table is now in admin_view_folder.php
+            // Only show sub-folders recursively
             if ($isOpen) {
                 renderAccordionTree($conn, $id, $open_folders);
             }
@@ -123,14 +144,17 @@ function renderAccordionTree($conn, $parent_id = NULL, $open_folders = []) {
     }
 }
 
-// 1. Fetch Counts for the Overview Cards
+
+// =========================================================================
+// DATA ANALYSIS AND METRICS LOGIC
+// =========================================================================
+
 // Total Users
 $userCount = $conn->query("SELECT COUNT(*) as total FROM registration WHERE role != 'admin'")->fetch_assoc()['total'];
 
-// NEW: Counts for the User Management Tab
+// Counts for the User Management Tab
 $enabledCount = $conn->query("SELECT COUNT(*) as total FROM registration WHERE role != 'admin' AND status = 'enabled'")->fetch_assoc()['total'];
 $disabledCount = $conn->query("SELECT COUNT(*) as total FROM registration WHERE role != 'admin' AND status = 'disabled'")->fetch_assoc()['total'];
-
 
 // Total Files only (for the Home overview)
 $fileCountQuery = $conn->query("SELECT COUNT(*) as total FROM documents WHERE type = 'file'");
@@ -141,13 +165,52 @@ $mainFolderCount = $conn->query("SELECT COUNT(*) as total FROM documents WHERE t
 $subFolderCount = $conn->query("SELECT COUNT(*) as total FROM documents WHERE type = 'folder' AND parent_id IS NOT NULL")->fetch_assoc()['total'];
 $pendingReview = 0; // Placeholder for future logic
 
-// 2. Fetch Users for the table
+// Fetch Users for the table
 $query = "SELECT id, fullname, role, status FROM registration WHERE role != 'admin' ORDER BY id DESC";
 $result = $conn->query($query);
 
-// 3. Fetch Documents/Folders for the table
-// Update this query in your PHP section
-$docs_query = "SELECT * FROM documents WHERE type = 'file' ORDER BY created_at DESC";
+
+// =========================================================================
+// 3. DYNAMIC DOCUMENT SEARCH ENGINE (The Overseer Fix)
+// =========================================================================
+if (isset($_GET['search_type']) && $_GET['search_type'] === 'docs') {
+    
+    $docs_query = "SELECT * FROM documents WHERE type = 'file'";
+    
+    if (!empty($_GET['doc_name'])) {
+        $name_safe = $conn->real_escape_string($_GET['doc_name']);
+        $docs_query .= " AND name LIKE '%$name_safe%'";
+    }
+    if (!empty($_GET['doc_author'])) {
+        $author_safe = $conn->real_escape_string($_GET['doc_author']);
+        $docs_query .= " AND author LIKE '%$author_safe%'";
+    }
+    if (!empty($_GET['doc_date'])) {
+        $date_safe = $conn->real_escape_string($_GET['doc_date']);
+        $docs_query .= " AND DATE(created_at) = '$date_safe'";
+    }
+    if (!empty($_GET['doc_keyword'])) {
+        $keyword_safe = $conn->real_escape_string($_GET['doc_keyword']);
+        $docs_query .= " AND (description LIKE '%$keyword_safe%' OR tags LIKE '%$keyword_safe%')";
+    }
+    
+    // Process folder tree collections seamlessly via isolated memory tracking
+    if (isset($_GET['folder_filter']) && $_GET['folder_filter'] !== 'all' && !empty($_GET['folder_filter'])) {
+        $folder_filter = (int)$_GET['folder_filter'];
+        
+        // Resolves the parent collection (e.g. ACADEMIC & STUDENT LIFE) down through nested sub-folders
+        $allowed_ids = find_all_subfolder_ids_mem($all_folders_list, $folder_filter);
+        $ids_string = implode(',', $allowed_ids);
+        
+        $docs_query .= " AND parent_id IN ($ids_string)";
+    }
+    
+    $docs_query .= " ORDER BY created_at DESC";
+
+} else {
+    $docs_query = "SELECT * FROM documents WHERE type = 'file' ORDER BY created_at DESC";
+}
+
 $docs_result = $conn->query($docs_query);
 ?>
 
@@ -219,42 +282,41 @@ $docs_result = $conn->query($docs_query);
                                                     </div>
 
                                                 <!-- 2. The Filter Hub -->
-                                            <div class="filter-container" style="background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
-                                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                                            <div class="filter-container admin-home-filter" style="background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+                                                <div class="admin-home-filter-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
                                                     
                                                             <!-- DOCUMENT SEARCH SECTION -->
-                                                            <div class="filter-column" style="border-right: 1px solid #eee; padding-right: 20px;">
-                                                                <h4 style="margin-bottom: 15px;"><i class="fas fa-file-search"></i> Search Documents</h4>
-                                                                        <form action="admindashboard.php" method="GET">
-                                                                                <input type="hidden" name="tab" value="home">
-                                                                                <input type="hidden" name="search_type" value="docs">
-                                                                                
-                                                                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-                                                                                    <input type="text" name="doc_name" placeholder="File Name/Title" value="" style="padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
-                                                                                    <input type="text" name="doc_author" placeholder="Author Name" value="" style="padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
-                                                                                    <input type="date" name="doc_date" value="" style="padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
-                                                                                    <input type="text" name="doc_keyword" placeholder="Keyword" value="" style="padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
-                                                                                </div>
+                                                           <div class="filter-column admin-doc-filter" style="border-right: 1px solid #eee; padding-right: 20px;">
+                                                                    <h4 style="margin-bottom: 15px;"><i class="fas fa-file-search"></i> Search Documents</h4>
+                                                                    <form action="admindashboard.php" method="GET">
+                                                                        <input type="hidden" name="tab" value="home">
+                                                                        <input type="hidden" name="search_type" value="docs">
 
-                                                                                <select name="folder_filter" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd; margin-bottom: 10px;">
-                                                                                    <option value="all">All Folders (Categories)</option>
-                                                                                    <?php 
-                                                                                    if($folders_result) {
-                                                                                        $folders_result->data_seek(0); 
-                                                                                        while($row = $folders_result->fetch_assoc()): ?>
-                                                                                            <option value="<?php echo $row['id']; ?>" <?php echo (isset($_GET['folder_filter']) && $_GET['folder_filter'] == $row['id']) ? 'selected' : ''; ?>>
-                                                                                                <?php echo htmlspecialchars($row['name']); ?>
-                                                                                            </option>
-                                                                                        <?php endwhile; 
-                                                                                    } ?>
-                                                                                </select>
+                                                                        <div class="admin-doc-fields" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                                                                            <input type="text" name="doc_name" placeholder="File Name/Title" value="<?php echo htmlspecialchars($_GET['doc_name'] ?? ''); ?>" style="padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
+                                                                            <input type="text" name="doc_author" placeholder="Author Name" value="<?php echo htmlspecialchars($_GET['doc_author'] ?? ''); ?>" style="padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
+                                                                            <input type="date" name="doc_date" value="<?php echo htmlspecialchars($_GET['doc_date'] ?? ''); ?>" style="padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
+                                                                            <input type="text" name="doc_keyword" placeholder="Keyword" value="<?php echo htmlspecialchars($_GET['doc_keyword'] ?? ''); ?>" style="padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
+                                                                        </div>
 
-                                                                                <button type="submit" style="width: 100%; background: #061428; color: white; padding: 12px; border: none; border-radius: 5px; cursor: pointer;">Filter Docs</button>
-                                                                        </form>
-                                                            </div>
+                                                                        <select name="folder_filter" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd; margin-bottom: 10px;">
+                                                                            <option value="all">All Folders (Categories)</option>
+                                                                            <?php 
+                                                                            if (!empty($all_folders_list)) {
+                                                                                foreach ($all_folders_list as $folder): ?>
+                                                                                    <option value="<?php echo $folder['id']; ?>" <?php echo (isset($_GET['folder_filter']) && $_GET['folder_filter'] == $folder['id']) ? 'selected' : ''; ?>>
+                                                                                        <?php echo htmlspecialchars($folder['name']); ?>
+                                                                                    </option>
+                                                                                <?php endforeach;
+                                                                            } ?>
+																		</select>
+
+                                                                        <button type="submit" style="width: 100%; background: #061428; color: white; padding: 12px; border: none; border-radius: 5px; cursor: pointer;">Filter Docs</button>
+                                                                    </form>
+															</div>
 
                                                             <!-- USER SEARCH SECTION -->
-                                                            <div class="filter-column">
+                                                            <div class="filter-column admin-user-filter">
                                                                 <h4 style="margin-bottom: 15px;"><i class="fas fa-users-cog"></i> Search Users</h4>
                                                                     <form action="admindashboard.php" method="GET">
                                                                             <input type="hidden" name="tab" value="home">
@@ -283,37 +345,46 @@ $docs_result = $conn->query($docs_query);
                                     <!-- 3. Dynamic Results Table -->
                                     <div class="results-area" style="margin-top: 30px;">
                                                 
-                                                            <?php if(isset($_GET['search_type']) && $_GET['search_type'] == 'docs'): 
-                                                                        // 1. Secure and capture inputs
-                                                                        $name = $conn->real_escape_string($_GET['doc_name'] ?? '');
-                                                                        $author = $conn->real_escape_string($_GET['doc_author'] ?? '');
-                                                                        $date = $conn->real_escape_string($_GET['doc_date'] ?? '');
-                                                                        $keyword = $conn->real_escape_string($_GET['doc_keyword'] ?? '');
-                                                                        $folder_id = $conn->real_escape_string($_GET['folder_filter'] ?? 'all');
+                                                        <?php if(isset($_GET['search_type']) && $_GET['search_type'] == 'docs'): 
+                                                    // 1. Secure and capture inputs
+                                                    $name = $conn->real_escape_string($_GET['doc_name'] ?? '');
+                                                    $author = $conn->real_escape_string($_GET['doc_author'] ?? '');
+                                                    $date = $conn->real_escape_string($_GET['doc_date'] ?? '');
+                                                    $keyword = $conn->real_escape_string($_GET['doc_keyword'] ?? '');
+                                                    $folder_id = $conn->real_escape_string($_GET['folder_filter'] ?? 'all');
 
-                                                                        // 2. Base Query: Use 'file' singular to match your enum definition
-                                                                    // Use 'file' singular to match your enum
-                                                                    $sql = "SELECT * FROM documents WHERE type = 'file'";
+                                                    // 2. Base Query
+                                                    $sql = "SELECT * FROM documents WHERE type = 'file'";
 
-                                                                    if($folder_id != 'all' && !empty($folder_id)) {
-                                                                        // We use parent_id because it links files to folders
-                                                                        $sql .= " AND (parent_id = '$folder_id' 
-                                                                                OR parent_id IN (SELECT id FROM documents WHERE parent_id = '$folder_id' AND type = 'folder'))";
-                                                                    }
+                                                    if($folder_id != 'all' && !empty($folder_id)) {
+                                                        // 3. PURE MYSQL DEEP SEARCH ENGINE (Finds all subfolders automatically)
+                                                        $sql = "WITH RECURSIVE subfolders AS (
+                                                                    SELECT id FROM documents WHERE id = '$folder_id' AND type = 'folder'
+                                                                    UNION ALL
+                                                                    SELECT d.id FROM documents d
+                                                                    INNER JOIN subfolders s ON d.parent_id = s.id
+                                                                    WHERE d.type = 'folder'
+                                                                ) 
+                                                                SELECT * FROM documents 
+                                                                WHERE type = 'file' 
+                                                                AND parent_id IN (SELECT id FROM subfolders)";
+                                                    }
 
-                                                                        // 4. Text & Metadata Filters
-                                                                        if(!empty($name))    $sql .= " AND name LIKE '%$name%'";
-                                                                        if(!empty($author))  $sql .= " AND author LIKE '%$author%'";
-                                                                        if(!empty($date))    $sql .= " AND DATE(created_at) = '$date'";
-                                                                        if(!empty($keyword)) $sql .= " AND (name LIKE '%$keyword%' OR description LIKE '%$keyword%')";
+                                                    // 4. Text & Metadata Filters
+                                                    if(!empty($name))    $sql .= " AND name LIKE '%$name%'";
+                                                    if(!empty($author))  $sql .= " AND author LIKE '%$author%'";
+                                                    if(!empty($date))    $sql .= " AND DATE(created_at) = '$date'";
+                                                    if(!empty($keyword)) $sql .= " AND (name LIKE '%$keyword%' OR description LIKE '%$keyword%')";
 
-                                                                        $sql .= " ORDER BY created_at DESC";
-                                                                        
-                                                                        // Optional: Uncomment the line below if you still get no results to see the query being run
-                                                                        // echo "<!-- Debug SQL: " . $sql . " -->";
+                                                    $sql .= " ORDER BY created_at DESC";
 
-                                                                        $res = $conn->query($sql);
-                                                            ?>
+                                                    // Execute the query cleanly on your stable block configuration
+                                                    $res = $conn->query($sql);
+
+                                                    // Pass results to global template variables to keep download/view links stable
+                                                    $docs_result = $res;
+                                                ?>
+									
                                             <div class="table-card" style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
                                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                                                     <h3 style="margin: 0;">File Search Results</h3>

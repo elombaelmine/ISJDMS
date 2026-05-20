@@ -100,6 +100,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !isset($_POST['send_admin_request'])
         $extracted_text = "";
 
         // --- EXTRACTION LOGIC ---
+       // --- EXTRACTION LOGIC ---
+        $extracted_text = "";
+
         if ($file_ext == 'txt') {
             $extracted_text = file_get_contents($target_file);
         } 
@@ -108,40 +111,37 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !isset($_POST['send_admin_request'])
         }
         elseif ($file_ext == 'pdf') {
             try {
-                // Pointing to: ISJDMS/php/libs/pdfparser/src/Smalot/PdfParser/
                 $lib_path = realpath(dirname(__DIR__) . '/libs/pdfparser/src/Smalot/PdfParser/');
 
                 if ($lib_path && is_dir($lib_path)) {
-                    // This autoloader handles all the internal sub-classes automatically
                     spl_autoload_register(function ($class) use ($lib_path) {
                         $prefix = 'Smalot\\PdfParser\\';
                         if (strncmp($prefix, $class, strlen($prefix)) === 0) {
                             $relative_class = substr($class, strlen($prefix));
                             $file = $lib_path . '/' . str_replace('\\', '/', $relative_class) . '.php';
-                            if (file_exists($file)) {
-                                require_once $file;
-                            }
+                            if (file_exists($file)) { require_once $file; }
                         }
                     });
 
-                    // Check if the main entry file exists
                     if (file_exists($lib_path . '/Parser.php')) {
                         $parser = new \Smalot\PdfParser\Parser();
                         $pdf = $parser->parseFile($target_file);
                         $extracted_text = $pdf->getText();
-                    } else {
-                        $extracted_text = "PDF Error: Parser.php missing in " . $lib_path;
                     }
-                } else {
-                    $extracted_text = "PDF Error: Library directory not found.";
                 }
             } catch (Exception $e) {
-                $extracted_text = "PDF Extraction failed: " . $e->getMessage();
+                // Silently fail extraction but allow the upload to continue
+                $extracted_text = ""; 
             }
         }
         
+        // 1. Fix Character Constraint (The error we discussed)
+        $extracted_text = mb_convert_encoding($extracted_text, 'UTF-8', 'UTF-8');
+
+        // 2. Prevent SQL Injection
         $extracted_text = mysqli_real_escape_string($conn, $extracted_text);
 
+        // 3. Final Database Insert
         $sql = "INSERT INTO documents (name, description, author, type, parent_id, file_path, viewed_by, file_content, created_at) 
                 VALUES ('$name', '$description', '$author', 'file', $parent_id, '$db_path', '$viewed_by_str', '$extracted_text', NOW())";
 
@@ -284,8 +284,16 @@ function read_docx($filename) {
         <div class="form-group">
             <label>Target Folder</label>
             <select name="parent_id" required>
-                <!-- PHP logic for folders here -->
                 <option value="">-- Select Folder --</option>
+                <?php if ($folders && $folders->num_rows > 0): ?>
+                    <?php while ($folder = $folders->fetch_assoc()): ?>
+                        <option value="<?php echo (int)$folder['id']; ?>">
+                            <?php echo htmlspecialchars($folder['name']); ?>
+                        </option>
+                    <?php endwhile; ?>
+                <?php else: ?>
+                    <option value="" disabled>No folders available</option>
+                <?php endif; ?>
             </select>
         </div>
 
@@ -296,6 +304,7 @@ function read_docx($filename) {
                 <option value="teacher">Teachers</option>
                 <option value="staff">Staff</option>
                 <option value="student">Students</option>
+                <option value="parent">Parents</option>
             </select>
         </div>
 

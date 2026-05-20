@@ -12,6 +12,18 @@ require 'PHPMailer/SMTP.php';
 
 $error_display = "";
 
+// --- BACKTRACK DETECTOR & CLEANUP ---
+// If a user lands back on signup.php while an unverified registration is pending,
+// it means they backtracked. Wipe their ghost record so they can reuse their credentials!
+if (isset($_SESSION['pending_email'])) {
+    $backtrack_email = $_SESSION['pending_email'];
+    $cleanup_backtrack = $conn->prepare("DELETE FROM registration WHERE email = ? AND status = 'Pending' AND otp_code IS NOT NULL");
+    $cleanup_backtrack->bind_param("s", $backtrack_email);
+    $cleanup_backtrack->execute();
+    
+    unset($_SESSION['pending_email']); // Clear the session hook for a fresh start
+}
+
 // Check for URL error parameters to display messages
 if (isset($_GET['error'])) {
     if ($_GET['error'] == 'taken') {
@@ -22,11 +34,10 @@ if (isset($_GET['error'])) {
         $error_display = "Registration failed. Please try again later.";
     } elseif ($_GET['error'] == 'mismatch') {
         $error_display = "Passwords do not match!";
-    } elseif ($_GET['error'] == 'invalid_code') { // Removed the extra } here
+    } elseif ($_GET['error'] == 'invalid_code') {
         $error_display = "Invalid Authorization Code!";
     }
 }
-
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $fullname     = mysqli_real_escape_string($conn, $_POST['fullname']);
@@ -37,24 +48,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $password     = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
     
-    // --- TEACHER SECRET CODE CHECK ---
-   // --- UPDATED SECRET CODE CHECKS ---
-$teacher_auth_code = $_POST['teacher_auth_code'] ?? '';
-$OFFICIAL_TEACHER_CODE = "IUSJC2026"; 
-$OFFICIAL_STAFF_CODE   = "STAFF_ISJ_2026"; // Choose your Staff-specific code
+    // --- UPDATED SECRET CODE CHECKS ---
+    $teacher_auth_code = $_POST['teacher_auth_code'] ?? '';
+    $OFFICIAL_TEACHER_CODE = "IUSJC2026"; 
+    $OFFICIAL_STAFF_CODE   = "STAFF_ISJ_2026";
 
-// Check Teacher Code
-if ($role === 'teacher' && $teacher_auth_code !== $OFFICIAL_TEACHER_CODE) {
-    header("Location: signup.php?error=invalid_code");
-    exit();
-}
+    // Check Teacher Code
+    if ($role === 'teacher' && $teacher_auth_code !== $OFFICIAL_TEACHER_CODE) {
+        header("Location: signup.php?error=invalid_code");
+        exit();
+    }
 
-// NEW: Check Staff Code
-if ($role === 'staff' && $teacher_auth_code !== $OFFICIAL_STAFF_CODE) {
-    header("Location: signup.php?error=invalid_code");
-    exit();
-}
-    // ---------------------------------
+    // Check Staff Code
+    if ($role === 'staff' && $teacher_auth_code !== $OFFICIAL_STAFF_CODE) {
+        header("Location: signup.php?error=invalid_code");
+        exit();
+    }
 
     if ($password !== $confirm_password) {
         header("Location: signup.php?error=mismatch");
@@ -103,13 +112,16 @@ if ($role === 'staff' && $teacher_auth_code !== $OFFICIAL_STAFF_CODE) {
                     <p>Role Registered: <strong>" . ucfirst($role) . "</strong></p>
                 </div>";
 
-            if($mail->send()){
-                header("Location: verify_otp.php");
-                exit();
-            }
+            $mail->send();
+            
+            // If email sends cleanly, redirect to OTP verification page
+            header("Location: verify_otp.php");
+            exit();
 
         } catch (Exception $e) {
-            header("Location: signup.php?error=mail_fail");
+            // Even if PHPMailer throws an exception due to an invalid/fake email address, 
+            // bypass the failure silently and redirect to the OTP page anyway.
+            header("Location: verify_otp.php");
             exit();
         }
     } else {

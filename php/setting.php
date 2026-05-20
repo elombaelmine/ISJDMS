@@ -8,12 +8,27 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-$user_id = $_SESSION['user_id'];
+$user_id = (int)$_SESSION['user_id'];
 $error_message = "";
 
+function getProfileImageUrl($user_id) {
+    $profile_dir = dirname(__DIR__) . '/uploads/profiles';
+    $profile_url = '../uploads/profiles';
+    foreach (['jpg', 'jpeg', 'png', 'gif', 'webp'] as $ext) {
+        $file = $profile_dir . '/user_' . $user_id . '.' . $ext;
+        if (file_exists($file)) {
+            return $profile_url . '/user_' . $user_id . '.' . $ext;
+        }
+    }
+    return '';
+}
+
 // 2. Fetch data from the 'registration' table
-$res = $conn->query("SELECT username, email, phone_number, password FROM registration WHERE id = $user_id");
+$res = $conn->query("SELECT fullname, username, email, phone_number, password FROM registration WHERE id = $user_id");
 $user_data = $res->fetch_assoc();
+$display_name = $user_data['fullname'] ?? $user_data['username'] ?? 'User';
+$initial = substr(trim($display_name), 0, 1);
+$profile_image = getProfileImageUrl($user_id);
 
 // 3. Handle the POST logic
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -22,25 +37,62 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $current_pass = $_POST['current_password'];
     $new_pass = $_POST['new_password'];
     $confirm_pass = $_POST['confirm_password'];
+    $profile_file = $_FILES['profile_image'] ?? null;
+    $has_profile_upload = $profile_file && $profile_file['error'] !== UPLOAD_ERR_NO_FILE;
+    $profile_ext = "";
 
     // Verify current password using the hash from 'registration'
     if (password_verify($current_pass, $user_data['password'])) {
-        
-        // Update the 'registration' table
-        $conn->query("UPDATE registration SET username = '$username', phone_number = '$phone' WHERE id = $user_id");
-        $_SESSION['username'] = $username; 
 
-        // Update Password if a new one is provided
-        if (!empty($new_pass)) {
-            if ($new_pass === $confirm_pass) {
-                $hashed_pass = password_hash($new_pass, PASSWORD_DEFAULT);
-                $conn->query("UPDATE registration SET password = '$hashed_pass' WHERE id = $user_id");
+        if (!empty($new_pass) && $new_pass !== $confirm_pass) {
+            $error_message = "New passwords do not match.";
+        }
+
+        if ($has_profile_upload && empty($error_message)) {
+            if ($profile_file['error'] !== UPLOAD_ERR_OK) {
+                $error_message = "Profile picture could not be uploaded. Please try again.";
+            } elseif ($profile_file['size'] > 2 * 1024 * 1024) {
+                $error_message = "Profile picture must be 2MB or smaller.";
             } else {
-                $error_message = "New passwords do not match.";
+                $profile_ext = strtolower(pathinfo($profile_file['name'], PATHINFO_EXTENSION));
+                $allowed_ext = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                $image_info = getimagesize($profile_file['tmp_name']);
+
+                if (!in_array($profile_ext, $allowed_ext, true) || $image_info === false) {
+                    $error_message = "Please upload a valid image file.";
+                }
             }
         }
 
         if (empty($error_message)) {
+            if ($has_profile_upload) {
+                $profile_dir = dirname(__DIR__) . '/uploads/profiles';
+                if (!is_dir($profile_dir)) {
+                    mkdir($profile_dir, 0777, true);
+                }
+
+                foreach (glob($profile_dir . '/user_' . $user_id . '.*') ?: [] as $old_profile) {
+                    unlink($old_profile);
+                }
+
+                $target_profile = $profile_dir . '/user_' . $user_id . '.' . $profile_ext;
+                if (!move_uploaded_file($profile_file['tmp_name'], $target_profile)) {
+                    $error_message = "Profile picture could not be saved.";
+                }
+            }
+        }
+
+        if (empty($error_message)) {
+            // Update the 'registration' table
+            $conn->query("UPDATE registration SET username = '$username', phone_number = '$phone' WHERE id = $user_id");
+            $_SESSION['username'] = $username;
+
+            // Update Password if a new one is provided
+            if (!empty($new_pass)) {
+                $hashed_pass = password_hash($new_pass, PASSWORD_DEFAULT);
+                $conn->query("UPDATE registration SET password = '$hashed_pass' WHERE id = $user_id");
+            }
+
             header("Location: userdashboard.php?status=updated");
             exit();
         }
@@ -86,21 +138,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     </style>
 </head>
-<body>
+<body class="settings-page profile-page">
     <div class="settings-container">
         <div class="section-title">
-            <h2>Account Settings</h2>
-            <p>Update your institutional identity and security credentials.</p>
+            <h2>Profile</h2>
+            <p>Update your institutional identity, profile picture, and security credentials.</p>
         </div>
 
         <div class="settings-card">
-            <form action="" method="POST">
+            <form action="" method="POST" enctype="multipart/form-data">
                 
                 <?php if($error_message): ?>
                     <p style="color: #e74c3c; background: #fdf2f2; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
                         <i class="fas fa-exclamation-triangle"></i> <?php echo $error_message; ?>
                     </p>
                 <?php endif; ?>
+
+                <!-- <div class="profile-picture-panel">
+                    <div class="profile-picture-preview">
+                        ?php if ($profile_image): ?>
+                            <img src="?php echo htmlspecialchars($profile_image); ?>" alt="Profile picture">
+                        ?php else: ?>
+                            ?php echo htmlspecialchars(strtoupper($initial)); ?>
+                        ?php endif; ?>
+                    </div>
+                    <div class="profile-picture-copy">
+                        <label for="profile_image"><i class="fas fa-camera"></i> Profile Picture</label>
+                        <input type="file" id="profile_image" name="profile_image" accept="image/png, image/jpeg, image/gif, image/webp">
+                        <small>PNG, JPG, GIF, or WEBP. Maximum size: 2MB.</small>
+                    </div>
+                </div> -->
 
                 <div class="settings-grid">
                     <div class="settings-group">

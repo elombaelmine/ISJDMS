@@ -17,32 +17,43 @@ if (!isset($_SESSION['user_id'])) {
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $doc_id = (int)($_POST['doc_id'] ?? 0);
-    $recipient = $_POST['recipient_email'] ?? '';
-    $user_msg = $_POST['message'] ?? '';
+    $recipient = trim($_POST['recipient_email'] ?? '');
+    $user_msg = htmlspecialchars($_POST['message'] ?? '');
     
-    // Use session data for the person sending the mail
     $sender_name = $_SESSION['fullname'] ?? 'User';
     $user_role = $_SESSION['role'] ?? ''; 
 
-    // Fetch file details
-    if ($user_role === 'admin') {
-        $stmt = $conn->prepare("SELECT name, file_path FROM documents WHERE id = ? AND type = 'file'");
-        $stmt->bind_param("i", $doc_id);
-    } else {
-        $stmt = $conn->prepare("SELECT name, file_path FROM documents WHERE id = ? AND type = 'file' AND (FIND_IN_SET(?, viewed_by) OR viewed_by = 'all')");
-        $stmt->bind_param("is", $doc_id, $user_role);
+    // 1. Validate the email format before processing anything
+    if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+        $redirect = ($user_role === 'admin') ? "../admindashboard.php?tab=docs&status=invalid_email" : "../userdashboard.php?status=invalid_email";
+        header("Location: $redirect");
+        exit();
     }
+
+    // 2. SIMPLIFIED QUERY: Drops the role check blocker so anybody can share an accessible file
+    $stmt = $conn->prepare("SELECT name, file_path FROM documents WHERE id = ? AND type = 'file'");
+    $stmt->bind_param("i", $doc_id);
     $stmt->execute();
     $file = $stmt->get_result()->fetch_assoc();
 
     if (!$file) {
-        header("Location: ../userdashboard.php?status=unauthorized");
+        $redirect = ($user_role === 'admin') ? "../admindashboard.php?tab=docs&status=not_found" : "../userdashboard.php?status=not_found";
+        header("Location: $redirect");
         exit();
     }
 
-    // Use your specific modem IP
-    $server_ip = '192.168.137.160'; 
-    $link = "http://" . $server_ip . "/ISJDMS/" . $file['file_path'];
+    // 3. AUTOMATED ENVIRONMENT SWITCH (Works Locally AND Live across all networks)
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
+    $host = $_SERVER['HTTP_HOST']; 
+
+    // If you are testing locally on XAMPP, force the link to your live domain 
+    // so external devices on cellular data / other networks can open it.
+    if ($host === 'localhost' || $host === '127.0.0.1') {
+        $protocol = "https://";
+        $host = "isjdms.kesug.com";
+    }
+    
+    $link = $protocol . $host . "/" . $file['file_path'];
 
     $mail = new PHPMailer(true);
 
@@ -64,34 +75,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $mail->isHTML(true);
         $mail->Subject = "Document Shared: " . $file['name'];
         $mail->Body    = "
-            <div style='font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee;'>
+            <div style='font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; max-width: 600px; margin: 0 auto;'>
                 <h3 style='color: #061428;'>Hello,</h3>
                 <p><strong>$sender_name</strong> has shared a document with you via the ISJ Management System.</p>
-                <p><strong>Message:</strong> $user_msg</p>
-                <p style='margin-top: 20px;'>
-                    <a href='$link' style='padding: 10px 20px; background: #D4AF37; color: #061428; text-decoration: none; border-radius: 5px; font-weight: bold;'>View Document</a>
+                <div style='background: #f9f9f9; padding: 15px; border-left: 4px solid #D4AF37; margin: 15px 0;'>
+                    <strong>Message:</strong><br>$user_msg
+                </div>
+                <p style='margin-top: 25px; text-align: center;'>
+                    <a href='$link' target='_blank' style='padding: 12px 25px; background: #061428; color: #D4AF37; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>View Document</a>
                 </p>
                 <br>
-                <p>Regards,<br>ISJ Team</p>
+                <hr style='border: 0; border-top: 1px solid #eee;'>
+                <p style='font-size: 0.8rem; color: #777;'>Regards,<br>ISJ Team</p>
             </div>";
 
         $mail->send();
 
-        // --- DYNAMIC REDIRECT BASED ON ROLE ---
-        if ($user_role === 'admin') {
-            header("Location: ../admindashboard.php?tab=docs&status=success");
-        } else {
-            header("Location: ../userdashboard.php?status=success");
-        }
+        $redirect = ($user_role === 'admin') ? "../admindashboard.php?tab=docs&status=success" : "../userdashboard.php?status=success";
+        header("Location: $redirect");
         exit();
         
     } catch (Exception $e) {
-        // Redirect back with an error status if it fails
-        if ($user_role === 'admin') {
-            header("Location: ../admindashboard.php?tab=docs&status=error");
-        } else {
-            header("Location: ../userdashboard.php?status=error");
-        }
+        $redirect = ($user_role === 'admin') ? "../admindashboard.php?tab=docs&status=error" : "../userdashboard.php?status=error";
+        header("Location: $redirect");
         exit();
     }
 }

@@ -713,7 +713,7 @@ img {
         margin-left: auto;
     }
 
-    .role-badge {
+    .admin-profile .role-badge {
         display: none;
     }
 
@@ -1177,5 +1177,231 @@ img {
     .main-content {
         padding-left: 14px !important;
         padding-right: 14px !important;
+    }
+}
+
+/* Admin dashboard mobile fixes for the compact header and home filters. */
+@media (max-width: 768px) {
+    .admin-wrapper .hamburger-btn,
+    body > .hamburger-btn {
+        top: 10px;
+        left: 12px;
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        min-height: 40px;
+        border-radius: 6px;
+        z-index: 1700;
+    }
+
+    .admin-wrapper .admin-header {
+        padding-left: 64px !important;
+        padding-right: 12px !important;
+    }
+
+    .admin-wrapper .admin-profile {
+        margin-left: auto;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .admin-wrapper .admin-profile .role-badge {
+        display: none !important;
+    }
+
+    .admin-wrapper .admin-profile .avatar {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+        font-size: 0.78rem;
+    }
+
+    .admin-wrapper .admin-home-filter,
+    .admin-wrapper .admin-home-filter[style] {
+        overflow: hidden;
+    }
+
+    .admin-wrapper .admin-home-filter-grid,
+    .admin-wrapper .admin-home-filter-grid[style] {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 18px !important;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .admin-wrapper .admin-doc-fields,
+    .admin-wrapper .admin-doc-fields[style] {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 10px !important;
+        width: 100%;
+        max-width: 100%;
+        margin-bottom: 10px !important;
+    }
+
+    .admin-wrapper .admin-home-filter input,
+    .admin-wrapper .admin-home-filter select,
+    .admin-wrapper .admin-home-filter button {
+        display: block;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box;
+    }
+}
+
+/* User dashboard mobile header and deep-search results. */
+@media (max-width: 768px) {
+    .dashboard-wrapper .hamburger-btn {
+        top: 10px;
+        left: 12px;
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        min-height: 40px;
+        border-radius: 6px;
+        z-index: 1700;
+    }
+
+    .dashboard-wrapper .header-top {
+        height: 60px;
+        padding-left: 64px !important;
+        padding-right: 10px !important;
+        gap: 8px;
+    }
+
+    .dashboard-wrapper .search-container {
+        flex: 1 1 auto;
+        width: auto !important;
+        min-width: 0;
+        max-width: none;
+        padding: 8px 10px;
+    }
+
+    .dashboard-wrapper .search-container input {
+        font-size: 12px;
+        min-width: 0;
+    }
+
+    .dashboard-wrapper .breadcrumb {
+        display: flex;
+        align-items: center;
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        font-size: 0.78rem;
+        white-space: nowrap;
+    }
+
+    .dashboard-wrapper .breadcrumb span:last-child {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .dashboard-wrapper .user-info {
+        margin-left: auto;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .dashboard-wrapper .user-info .user-name {
+        display: none;
+    }
+
+    .dashboard-wrapper .user-avatar {
+        width: 34px;
+        height: 34px;
+        min-width: 34px;
+        font-size: 0.78rem;
+    }
+
+    #content-search-section {
+        padding: 0 !important;
+    }
+
+    #content-search-section .search-container-heavy,
+    #content-search-section .search-container-heavy[style] {
+        width: 100%;
+        padding: 22px 14px !important;
+        border-radius: 10px !important;
+    }
+
+    #content-search-section .search-container-heavy form,
+    #content-search-section .search-container-heavy form[style] {
+        display: grid !important;
+        grid-template-columns: 1fr;
+        gap: 10px !important;
+    }
+
+    #content-search-section .search-container-heavy input,
+    #content-search-section .search-container-heavy button {
+        width: 100% !important;
+        min-height: 40px;
+    }
+
+    #content-search-section .content-results-card,
+    #content-search-section .content-results-card[style] {
+        overflow: visible !important;
+        padding: 0 !important;
+    }
+
+    #content-search-section .content-results-table,
+    #content-search-section .content-results-table tbody,
+    #content-search-section .content-results-table tr,
+    #content-search-section .content-results-table td {
+        display: block !important;
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    #content-search-section .content-results-table {
+        min-width: 0 !important;
+        border-collapse: separate !important;
+        border-spacing: 0 12px !important;
+    }
+
+    #content-search-section .content-results-table thead {
+        display: none !important;
+    }
+
+    #content-search-section .content-results-table tr {
+        border: 1px solid #edf0f3 !important;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    #content-search-section .content-results-table td {
+        padding: 10px 12px !important;
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+        border-bottom: 1px solid #edf0f3;
+    }
+
+    #content-search-section .content-results-table td::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 4px;
+        color: #061428;
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    #content-search-section .content-results-table td:last-child {
+        border-bottom: 0;
+    }
+
+    #content-search-section .content-result-actions {
+        display: flex !important;
+        align-items: center;
+        gap: 14px;
+    }
+
+    #content-search-section .content-result-actions::before {
+        margin-right: auto;
+        margin-bottom: 0;
     }
 }

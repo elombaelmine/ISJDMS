@@ -26,11 +26,26 @@ if ($is_searching) {
 // Determine which tab should be open. Default is now 'all_files'
 $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'all_files';
 
+$user_id = (int)$_SESSION['user_id'];
 $fullname = $_SESSION['fullname'];
 // Retrieve the role from the session
 $user_role = $_SESSION['role'] ?? ''; 
 $displayName = strtolower(explode(' ', $fullname)[0]); 
 $initial = substr($displayName, 0, 1);
+
+function getProfileImageUrl($user_id) {
+    $profile_dir = dirname(__DIR__) . '/uploads/profiles';
+    $profile_url = '../uploads/profiles';
+    foreach (['jpg', 'jpeg', 'png', 'gif', 'webp'] as $ext) {
+        $file = $profile_dir . '/user_' . $user_id . '.' . $ext;
+        if (file_exists($file)) {
+            return $profile_url . '/user_' . $user_id . '.' . $ext;
+        }
+    }
+    return '';
+}
+
+$profile_image = getProfileImageUrl($user_id);
 
 // Flag for upload permissions (Staff and Teachers only)
 $can_upload = ($user_role === 'teacher' || $user_role === 'staff');
@@ -119,11 +134,11 @@ function get_deep_folder_count($conn, $folder_id, $user_role) {
                     <a href="javascript:void(0)" id="btn-content-search" class="nav-item">
                             <i class="fas fa-search-plus" style="color: #D4AF37;"></i>Search Within Files </a>
                     <a href="#" class="nav-item" id="btn-plan"><i class="fas fa-book-reader"></i> Plan</a>
+                    <a href="setting.php" class="nav-item"><i class="fas fa-user-circle"></i> Profile</a>
                 </nav>
 
                 <div class="sidebar-bottom">
                     <a href="logout.php" class="nav-item logout-link"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
-                    <a href="../php/setting.php" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
                 </div>
             </aside>
 
@@ -145,7 +160,13 @@ function get_deep_folder_count($conn, $folder_id, $user_role) {
 
                                 <div class="user-info">
                                     <span class="user-name"><?php echo htmlspecialchars(ucfirst($displayName)); ?></span>
-                                    <div class="user-avatar" style="text-transform: uppercase;"><?php echo htmlspecialchars($initial); ?></div>
+                                    <div class="user-avatar profile-avatar" style="text-transform: uppercase;">
+                                        <?php if ($profile_image): ?>
+                                            <img src="<?php echo htmlspecialchars($profile_image); ?>" alt="Profile picture">
+                                        <?php else: ?>
+                                            <?php echo htmlspecialchars($initial); ?>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                     </header>
 
@@ -153,7 +174,7 @@ function get_deep_folder_count($conn, $folder_id, $user_role) {
                         <?php if (isset($_GET['status']) && $_GET['status'] === 'updated'): ?>
                             <div style="background: #000; color: #fff; padding: 12px 20px; border-radius: 8px; margin-bottom: 25px; border-left: 5px solid #D4AF37; display: flex; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                                 <i class="fas fa-check-circle" style="margin-right: 12px; color: #D4AF37;"></i>
-                                <span style="font-weight: 500; font-size: 0.95rem;">Your account settings have been successfully updated.</span>
+                                <span style="font-weight: 500; font-size: 0.95rem;">Your profile has been successfully updated.</span>
                             </div>
                         <?php endif; ?>
                        <!-- success message -->
@@ -473,13 +494,16 @@ function get_deep_folder_count($conn, $folder_id, $user_role) {
                                                     if (isset($_POST['run_content_search']) && isset($_POST['tab']) && $_POST['tab'] == 'content'): 
                                                         
                                                         $keyword = $conn->real_escape_string($_POST['content_keyword']);
-                                                        $sql = "SELECT * FROM documents WHERE type = 'file' AND file_content LIKE '%$keyword%'";
+                                                        $sql = "SELECT * FROM documents
+                                                                WHERE type = 'file'
+                                                                AND (FIND_IN_SET('$user_role', viewed_by) OR viewed_by = 'all')
+                                                                AND file_content LIKE '%$keyword%'";
                                                         $results = $conn->query($sql);
                                             ?>
 
                                                 <?php if (isset($results)): ?>
-                                                    <div class="table-card" style="margin-top: 30px; background: white; border-radius: 10px; overflow: hidden;">
-                                                        <table class="isj-table" style="width: 100%; border-collapse: collapse;">
+                                                    <div class="table-card content-results-card" style="margin-top: 30px; background: white; border-radius: 10px; overflow-x: auto;">
+                                                        <table class="isj-table content-results-table" style="width: 100%; border-collapse: collapse;">
                                                             <thead style="background: #061428; color: white;">
                                                                 <tr>
                                                                     <th style="padding: 15px; text-align: left;">TITLE</th>
@@ -492,10 +516,10 @@ function get_deep_folder_count($conn, $folder_id, $user_role) {
                                                                 <?php if ($results && $results->num_rows > 0): ?>
                                                                     <?php while($row = $results->fetch_assoc()): ?>
                                                                         <tr style="border-bottom: 1px solid #eee;">
-                                                                            <td style="padding: 15px;"><i class="fas fa-file-alt"></i> <?php echo htmlspecialchars($row['name']); ?></td>
-                                                                            <td style="padding: 15px;"><?php echo htmlspecialchars($row['author'] ?? 'Admin'); ?></td>
-                                                                            <td style="padding: 15px;"><?php echo date('d/m/Y', strtotime($row['created_at'])); ?></td>
-                                                                            <td style="padding: 15px;">
+                                                                            <td data-label="Title" style="padding: 15px;"><i class="fas fa-file-alt"></i> <?php echo htmlspecialchars($row['name']); ?></td>
+                                                                            <td data-label="Author" style="padding: 15px;"><?php echo htmlspecialchars($row['author'] ?? 'Admin'); ?></td>
+                                                                            <td data-label="Date Created" style="padding: 15px;"><?php echo date('d/m/Y', strtotime($row['created_at'])); ?></td>
+                                                                            <td data-label="Actions" class="content-result-actions" style="padding: 15px;">
                                                                                 <a href="../<?php echo htmlspecialchars($row['file_path']); ?>" target="_blank" style="margin-right: 10px; color: #061428;"><i class="fas fa-eye"></i></a>
                                                                                 <a href="../<?php echo htmlspecialchars($row['file_path']); ?>" download style="color: green;"><i class="fas fa-download"></i></a>
                                                                             </td>

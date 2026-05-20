@@ -8,10 +8,25 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $fullname = $_SESSION['fullname'] ?? 'User';
+$user_id = (int)$_SESSION['user_id'];
 $user_role = $_SESSION['role'] ?? ''; 
 $displayName = strtolower(explode(' ', $fullname)[0]); 
 $initial = substr($displayName, 0, 1);
 $folder_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+
+function getProfileImageUrl($user_id) {
+    $profile_dir = dirname(__DIR__) . '/uploads/profiles';
+    $profile_url = '../uploads/profiles';
+    foreach (['jpg', 'jpeg', 'png', 'gif', 'webp'] as $ext) {
+        $file = $profile_dir . '/user_' . $user_id . '.' . $ext;
+        if (file_exists($file)) {
+            return $profile_url . '/user_' . $user_id . '.' . $ext;
+        }
+    }
+    return '';
+}
+
+$profile_image = getProfileImageUrl($user_id);
 
 // Fetch current folder details
 if ($user_role === 'admin') {
@@ -69,7 +84,13 @@ $current_folder_name = $folder_data['name'] ?? 'Unknown Folder';
             
             <div class="user-info">
                 <span class="user-name"><?php echo htmlspecialchars(ucfirst($displayName)); ?></span>
-                <div class="user-avatar"><?php echo htmlspecialchars($initial); ?></div>
+                <div class="user-avatar profile-avatar">
+                    <?php if ($profile_image): ?>
+                        <img src="<?php echo htmlspecialchars($profile_image); ?>" alt="Profile picture">
+                    <?php else: ?>
+                        <?php echo htmlspecialchars($initial); ?>
+                    <?php endif; ?>
+                </div>
             </div>
         </header>
 
